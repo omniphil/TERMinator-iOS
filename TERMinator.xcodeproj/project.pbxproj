@@ -1,0 +1,712 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AA0000000000000000000002 /* UIScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000001 /* UIScale.swift */; };
+		AA000001001 /* TERMinatorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001000 /* TERMinatorApp.swift */; };
+		AA000002001 /* BBSEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002000 /* BBSEntry.swift */; };
+		AA000003001 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003000 /* HomeView.swift */; };
+		AA000003003 /* BBSListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003002 /* BBSListView.swift */; };
+		AA000003005 /* TerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003004 /* TerminalView.swift */; };
+		AA000003007 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003006 /* SettingsView.swift */; };
+		AA000003009 /* TransferProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003008 /* TransferProgressView.swift */; };
+		AA000003011 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003010 /* HelpView.swift */; };
+		AA000003013 /* CrtMarqueeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003012 /* CrtMarqueeView.swift */; };
+		AA000003015 /* HistoryTickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003014 /* HistoryTickerView.swift */; };
+		AA000003017 /* TerminalMetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003016 /* TerminalMetalView.swift */; };
+		AA000004001 /* TerminalViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000004000 /* TerminalViewModel.swift */; };
+		AA000005001 /* BellManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005000 /* BellManager.swift */; };
+		AA000005003 /* SessionLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005002 /* SessionLogger.swift */; };
+		AA000005005 /* TransferManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005004 /* TransferManager.swift */; };
+		AA000005007 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005006 /* KeychainManager.swift */; };
+		AA000005009 /* ImportExportManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005008 /* ImportExportManager.swift */; };
+		AA000005011 /* OrientationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005010 /* OrientationManager.swift */; };
+		AA000006001 /* NativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000006000 /* NativeBridge.swift */; };
+		AA000006003 /* syncterm_ios.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006002 /* syncterm_ios.c */; };
+		AA000006005 /* ios_ciolib.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006004 /* ios_ciolib.c */; };
+		AA000006011 /* syncterm_stubs.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006010 /* syncterm_stubs.c */; };
+		AA000006013 /* TelnetConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000006012 /* TelnetConnection.swift */; };
+		AA000006015 /* allfonts.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006014 /* allfonts.c */; };
+		AA000006017 /* zmodem_ios.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006016 /* zmodem_ios.c */; };
+		AA000006019 /* zmodem.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006018 /* zmodem.c */; };
+		AA000006021 /* crc32.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006020 /* crc32.c */; };
+		AA000006023 /* crc16.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006022 /* crc16.c */; };
+		AA000006035 /* SSHConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000006036 /* SSHConnection.swift */; };
+		AA000006040 /* ios_stubs.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006041 /* ios_stubs.c */; };
+		AA000006042 /* syncterm/ssh.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006043 /* syncterm/ssh.c */; };
+		AA000006044 /* syncterm/conn.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006045 /* syncterm/conn.c */; };
+		AA000006046 /* syncterm/conn_telnet.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006047 /* syncterm/conn_telnet.c */; };
+		AA000006048 /* syncterm/telnet_io.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006049 /* syncterm/telnet_io.c */; };
+		AA000006050 /* xpdev/sockwrap.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006051 /* xpdev/sockwrap.c */; };
+		AA000006052 /* xpdev/threadwrap.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006053 /* xpdev/threadwrap.c */; };
+		AA000006054 /* xpdev/link_list.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006055 /* xpdev/link_list.c */; };
+		AA000006056 /* xpdev/xpevent.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006057 /* xpdev/xpevent.c */; };
+		AA000006058 /* xpdev/semwrap.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006059 /* xpdev/semwrap.c */; };
+		AA000006060 /* encode/base64.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006061 /* encode/base64.c */; };
+		AA000006062 /* xpdev/strwrap.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006063 /* xpdev/strwrap.c */; };
+		AA000006064 /* sftp/sftp_client.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006065 /* sftp/sftp_client.c */; };
+		AA000006066 /* sftp/sftp_pkt.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006067 /* sftp/sftp_pkt.c */; };
+		AA000006068 /* sftp/sftp_str.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006069 /* sftp/sftp_str.c */; };
+		AA000006070 /* sftp/sftp_attr.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006071 /* sftp/sftp_attr.c */; };
+		AA000006072 /* libcl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA000006073 /* libcl.a */; };
+		AA000006074 /* xpdev/filewrap.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006075 /* xpdev/filewrap.c */; };
+		AA000006076 /* xpdev/ini_file.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006077 /* xpdev/ini_file.c */; };
+		AA000006078 /* xpdev/str_list.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006079 /* xpdev/str_list.c */; };
+		AA000006080 /* xpdev/genwrap.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006081 /* xpdev/genwrap.c */; };
+		AA000006082 /* xpdev/dirwrap.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006083 /* xpdev/dirwrap.c */; };
+		AA000006084 /* xpdev/netwrap.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006085 /* xpdev/netwrap.c */; };
+		AA000006086 /* xpdev/xpdatetime.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006087 /* xpdev/xpdatetime.c */; };
+		AA000006088 /* xpdev/xpprintf.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006089 /* xpdev/xpprintf.c */; };
+		AA000006090 /* xpdev/datewrap.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006091 /* xpdev/datewrap.c */; };
+		AA000006092 /* syncterm/rlogin.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006093 /* syncterm/rlogin.c */; };
+		AA000007001 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000007000 /* Colors.swift */; };
+		AA000008001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000008000 /* Assets.xcassets */; };
+		AA000008010 /* snapshot_absinthe.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008011 /* snapshot_absinthe.png */; };
+		AA000008012 /* snapshot_deadmodem.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008013 /* snapshot_deadmodem.png */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AA000000000 /* TERMinator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TERMinator.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000001 /* UIScale.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIScale.swift; sourceTree = "<group>"; };
+		AA000001000 /* TERMinatorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TERMinatorApp.swift; sourceTree = "<group>"; };
+		AA000002000 /* BBSEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BBSEntry.swift; sourceTree = "<group>"; };
+		AA000003000 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		AA000003002 /* BBSListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BBSListView.swift; sourceTree = "<group>"; };
+		AA000003004 /* TerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalView.swift; sourceTree = "<group>"; };
+		AA000003006 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AA000003008 /* TransferProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferProgressView.swift; sourceTree = "<group>"; };
+		AA000003010 /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
+		AA000003012 /* CrtMarqueeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrtMarqueeView.swift; sourceTree = "<group>"; };
+		AA000003014 /* HistoryTickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryTickerView.swift; sourceTree = "<group>"; };
+		AA000003016 /* TerminalMetalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalMetalView.swift; sourceTree = "<group>"; };
+		AA000004000 /* TerminalViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalViewModel.swift; sourceTree = "<group>"; };
+		AA000005000 /* BellManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BellManager.swift; sourceTree = "<group>"; };
+		AA000005002 /* SessionLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionLogger.swift; sourceTree = "<group>"; };
+		AA000005004 /* TransferManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferManager.swift; sourceTree = "<group>"; };
+		AA000005006 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
+		AA000005008 /* ImportExportManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportExportManager.swift; sourceTree = "<group>"; };
+		AA000005010 /* OrientationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationManager.swift; sourceTree = "<group>"; };
+		AA000006000 /* NativeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeBridge.swift; sourceTree = "<group>"; };
+		AA000006002 /* syncterm_ios.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = syncterm_ios.c; sourceTree = "<group>"; };
+		AA000006004 /* ios_ciolib.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ios_ciolib.c; sourceTree = "<group>"; };
+		AA000006006 /* ios_ciolib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ios_ciolib.h; sourceTree = "<group>"; };
+		AA000006007 /* native_bridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = native_bridge.h; sourceTree = "<group>"; };
+		AA000006008 /* safe_math.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = safe_math.h; sourceTree = "<group>"; };
+		AA000006009 /* TERMinator-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TERMinator-Bridging-Header.h"; sourceTree = "<group>"; };
+		AA000006010 /* syncterm_stubs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = syncterm_stubs.c; sourceTree = "<group>"; };
+		AA000006012 /* TelnetConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelnetConnection.swift; sourceTree = "<group>"; };
+		AA000006014 /* allfonts.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = allfonts.c; sourceTree = "<group>"; };
+		AA000006016 /* zmodem_ios.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = zmodem_ios.c; sourceTree = "<group>"; };
+		AA000006018 /* zmodem.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = zmodem.c; sourceTree = "<group>"; };
+		AA000006020 /* crc32.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = crc32.c; sourceTree = "<group>"; };
+		AA000006022 /* crc16.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = crc16.c; sourceTree = "<group>"; };
+		AA000006024 /* zmodem_ios.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = zmodem_ios.h; sourceTree = "<group>"; };
+		AA000006025 /* zmodem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = zmodem.h; sourceTree = "<group>"; };
+		AA000006026 /* crc32.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = crc32.h; sourceTree = "<group>"; };
+		AA000006027 /* crc16.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = crc16.h; sourceTree = "<group>"; };
+		AA000006028 /* gen_defs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gen_defs.h; sourceTree = "<group>"; };
+		AA000006029 /* genwrap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = genwrap.h; sourceTree = "<group>"; };
+		AA000006030 /* dirwrap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dirwrap.h; sourceTree = "<group>"; };
+		AA000006031 /* filewrap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filewrap.h; sourceTree = "<group>"; };
+		AA000006032 /* wrapdll.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = wrapdll.h; sourceTree = "<group>"; };
+		AA000006033 /* sexyz.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sexyz.h; sourceTree = "<group>"; };
+		AA000006034 /* telnet.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = telnet.h; sourceTree = "<group>"; };
+		AA000006036 /* SSHConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHConnection.swift; sourceTree = "<group>"; };
+		AA000006041 /* ios_stubs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ios_stubs.c; sourceTree = "<group>"; };
+		AA000006043 /* syncterm/ssh.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = syncterm/ssh.c; sourceTree = "<group>"; };
+		AA000006045 /* syncterm/conn.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = syncterm/conn.c; sourceTree = "<group>"; };
+		AA000006047 /* syncterm/conn_telnet.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = syncterm/conn_telnet.c; sourceTree = "<group>"; };
+		AA000006049 /* syncterm/telnet_io.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = syncterm/telnet_io.c; sourceTree = "<group>"; };
+		AA000006051 /* xpdev/sockwrap.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/sockwrap.c; sourceTree = "<group>"; };
+		AA000006053 /* xpdev/threadwrap.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/threadwrap.c; sourceTree = "<group>"; };
+		AA000006055 /* xpdev/link_list.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/link_list.c; sourceTree = "<group>"; };
+		AA000006057 /* xpdev/xpevent.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/xpevent.c; sourceTree = "<group>"; };
+		AA000006059 /* xpdev/semwrap.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/semwrap.c; sourceTree = "<group>"; };
+		AA000006061 /* encode/base64.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = encode/base64.c; sourceTree = "<group>"; };
+		AA000006063 /* xpdev/strwrap.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/strwrap.c; sourceTree = "<group>"; };
+		AA000006065 /* sftp/sftp_client.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sftp/sftp_client.c; sourceTree = "<group>"; };
+		AA000006067 /* sftp/sftp_pkt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sftp/sftp_pkt.c; sourceTree = "<group>"; };
+		AA000006069 /* sftp/sftp_str.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sftp/sftp_str.c; sourceTree = "<group>"; };
+		AA000006071 /* sftp/sftp_attr.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sftp/sftp_attr.c; sourceTree = "<group>"; };
+		AA000006073 /* libcl.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcl.a; path = "cryptlib/$(CRYPTLIB_PLATFORM)/libcl.a"; sourceTree = "<group>"; };
+		AA000006075 /* xpdev/filewrap.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/filewrap.c; sourceTree = "<group>"; };
+		AA000006077 /* xpdev/ini_file.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/ini_file.c; sourceTree = "<group>"; };
+		AA000006079 /* xpdev/str_list.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/str_list.c; sourceTree = "<group>"; };
+		AA000006081 /* xpdev/genwrap.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/genwrap.c; sourceTree = "<group>"; };
+		AA000006083 /* xpdev/dirwrap.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/dirwrap.c; sourceTree = "<group>"; };
+		AA000006085 /* xpdev/netwrap.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/netwrap.c; sourceTree = "<group>"; };
+		AA000006087 /* xpdev/xpdatetime.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/xpdatetime.c; sourceTree = "<group>"; };
+		AA000006089 /* xpdev/xpprintf.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/xpprintf.c; sourceTree = "<group>"; };
+		AA000006091 /* xpdev/datewrap.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xpdev/datewrap.c; sourceTree = "<group>"; };
+		AA000006093 /* syncterm/rlogin.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = syncterm/rlogin.c; sourceTree = "<group>"; };
+		AA000007000 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
+		AA000008000 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA000008011 /* snapshot_absinthe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_absinthe.png; sourceTree = "<group>"; };
+		AA000008013 /* snapshot_deadmodem.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_deadmodem.png; sourceTree = "<group>"; };
+		AA000009000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AA100000000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000006072 /* libcl.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA0000000000000000000003 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000001 /* UIScale.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		AA200000000 = {
+			isa = PBXGroup;
+			children = (
+				AA200001000 /* TERMinator */,
+				AA200002000 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA200001000 /* TERMinator */ = {
+			isa = PBXGroup;
+			children = (
+				AA000001000 /* TERMinatorApp.swift */,
+				AA000006009 /* TERMinator-Bridging-Header.h */,
+				AA200003000 /* Models */,
+				AA200004000 /* Views */,
+				AA200005000 /* ViewModels */,
+				AA200006000 /* Services */,
+				AA200007000 /* Bridge */,
+				AA200008000 /* Theme */,
+				AA0000000000000000000003 /* Utilities */,
+				AA200009000 /* Resources */,
+				AA000008000 /* Assets.xcassets */,
+				AA000009000 /* Info.plist */,
+			);
+			path = TERMinator;
+			sourceTree = "<group>";
+		};
+		AA200002000 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA000000000 /* TERMinator.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AA200003000 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AA000002000 /* BBSEntry.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AA200004000 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AA000003000 /* HomeView.swift */,
+				AA000003002 /* BBSListView.swift */,
+				AA000003004 /* TerminalView.swift */,
+				AA000003006 /* SettingsView.swift */,
+				AA000003008 /* TransferProgressView.swift */,
+				AA000003010 /* HelpView.swift */,
+				AA000003012 /* CrtMarqueeView.swift */,
+				AA000003014 /* HistoryTickerView.swift */,
+				AA000003016 /* TerminalMetalView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AA200005000 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				AA000004000 /* TerminalViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		AA200006000 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AA000005000 /* BellManager.swift */,
+				AA000005002 /* SessionLogger.swift */,
+				AA000005004 /* TransferManager.swift */,
+				AA000005006 /* KeychainManager.swift */,
+				AA000005008 /* ImportExportManager.swift */,
+				AA000005010 /* OrientationManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		AA200007000 /* Bridge */ = {
+			isa = PBXGroup;
+			children = (
+				AA000006000 /* NativeBridge.swift */,
+				AA000006012 /* TelnetConnection.swift */,
+				AA000006036 /* SSHConnection.swift */,
+				AA000006002 /* syncterm_ios.c */,
+				AA000006004 /* ios_ciolib.c */,
+				AA000006010 /* syncterm_stubs.c */,
+				AA000006014 /* allfonts.c */,
+				AA000006016 /* zmodem_ios.c */,
+				AA000006018 /* zmodem.c */,
+				AA000006020 /* crc32.c */,
+				AA000006022 /* crc16.c */,
+				AA000006041 /* ios_stubs.c */,
+				AA000006043 /* syncterm/ssh.c */,
+				AA000006045 /* syncterm/conn.c */,
+				AA000006047 /* syncterm/conn_telnet.c */,
+				AA000006049 /* syncterm/telnet_io.c */,
+				AA000006093 /* syncterm/rlogin.c */,
+				AA000006051 /* xpdev/sockwrap.c */,
+				AA000006053 /* xpdev/threadwrap.c */,
+				AA000006055 /* xpdev/link_list.c */,
+				AA000006057 /* xpdev/xpevent.c */,
+				AA000006059 /* xpdev/semwrap.c */,
+				AA000006061 /* encode/base64.c */,
+				AA000006063 /* xpdev/strwrap.c */,
+				AA000006065 /* sftp/sftp_client.c */,
+				AA000006067 /* sftp/sftp_pkt.c */,
+				AA000006069 /* sftp/sftp_str.c */,
+				AA000006071 /* sftp/sftp_attr.c */,
+				AA000006073 /* libcl.a */,
+				AA000006075 /* xpdev/filewrap.c */,
+				AA000006077 /* xpdev/ini_file.c */,
+				AA000006079 /* xpdev/str_list.c */,
+				AA000006081 /* xpdev/genwrap.c */,
+				AA000006083 /* xpdev/dirwrap.c */,
+				AA000006085 /* xpdev/netwrap.c */,
+				AA000006087 /* xpdev/xpdatetime.c */,
+				AA000006089 /* xpdev/xpprintf.c */,
+				AA000006091 /* xpdev/datewrap.c */,
+				AA000006006 /* ios_ciolib.h */,
+				AA000006007 /* native_bridge.h */,
+				AA000006008 /* safe_math.h */,
+				AA000006024 /* zmodem_ios.h */,
+				AA000006025 /* zmodem.h */,
+				AA000006026 /* crc32.h */,
+				AA000006027 /* crc16.h */,
+				AA000006028 /* gen_defs.h */,
+				AA000006029 /* genwrap.h */,
+				AA000006030 /* dirwrap.h */,
+				AA000006031 /* filewrap.h */,
+				AA000006032 /* wrapdll.h */,
+				AA000006033 /* sexyz.h */,
+				AA000006034 /* telnet.h */,
+			);
+			path = Bridge;
+			sourceTree = "<group>";
+		};
+		AA200008000 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				AA000007000 /* Colors.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		AA200009000 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				AA000008011 /* snapshot_absinthe.png */,
+				AA000008013 /* snapshot_deadmodem.png */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA300000000 /* TERMinator */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA400000000 /* Build configuration list for PBXNativeTarget "TERMinator" */;
+			buildPhases = (
+				AA300001000 /* Sources */,
+				AA100000000 /* Frameworks */,
+				AA300002000 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TERMinator;
+			productName = TERMinator;
+			productReference = AA000000000 /* TERMinator.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA500000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					AA300000000 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = AA500001000 /* Build configuration list for PBXProject "TERMinator" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AA200000000;
+			productRefGroup = AA200002000 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA300000000 /* TERMinator */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA300002000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000008001 /* Assets.xcassets in Resources */,
+				AA000008010 /* snapshot_absinthe.png in Resources */,
+				AA000008012 /* snapshot_deadmodem.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AA300001000 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000001001 /* TERMinatorApp.swift in Sources */,
+				AA000002001 /* BBSEntry.swift in Sources */,
+				AA000003001 /* HomeView.swift in Sources */,
+				AA000003003 /* BBSListView.swift in Sources */,
+				AA000003005 /* TerminalView.swift in Sources */,
+				AA000003007 /* SettingsView.swift in Sources */,
+				AA000003009 /* TransferProgressView.swift in Sources */,
+				AA000003011 /* HelpView.swift in Sources */,
+				AA000003013 /* CrtMarqueeView.swift in Sources */,
+				AA000003015 /* HistoryTickerView.swift in Sources */,
+				AA000003017 /* TerminalMetalView.swift in Sources */,
+				AA000004001 /* TerminalViewModel.swift in Sources */,
+				AA000005001 /* BellManager.swift in Sources */,
+				AA000005003 /* SessionLogger.swift in Sources */,
+				AA000005005 /* TransferManager.swift in Sources */,
+				AA000005007 /* KeychainManager.swift in Sources */,
+				AA000005009 /* ImportExportManager.swift in Sources */,
+				AA000005011 /* OrientationManager.swift in Sources */,
+				AA000006001 /* NativeBridge.swift in Sources */,
+				AA000006013 /* TelnetConnection.swift in Sources */,
+				AA000006035 /* SSHConnection.swift in Sources */,
+				AA000006003 /* syncterm_ios.c in Sources */,
+				AA000006005 /* ios_ciolib.c in Sources */,
+				AA000006011 /* syncterm_stubs.c in Sources */,
+				AA000006015 /* allfonts.c in Sources */,
+				AA000006017 /* zmodem_ios.c in Sources */,
+				AA000006019 /* zmodem.c in Sources */,
+				AA000006021 /* crc32.c in Sources */,
+				AA000006023 /* crc16.c in Sources */,
+				AA000006040 /* ios_stubs.c in Sources */,
+				AA000006042 /* syncterm/ssh.c in Sources */,
+				AA000006044 /* syncterm/conn.c in Sources */,
+				AA000006046 /* syncterm/conn_telnet.c in Sources */,
+				AA000006048 /* syncterm/telnet_io.c in Sources */,
+				AA000006092 /* syncterm/rlogin.c in Sources */,
+				AA000006050 /* xpdev/sockwrap.c in Sources */,
+				AA000006052 /* xpdev/threadwrap.c in Sources */,
+				AA000006054 /* xpdev/link_list.c in Sources */,
+				AA000006056 /* xpdev/xpevent.c in Sources */,
+				AA000006058 /* xpdev/semwrap.c in Sources */,
+				AA000006060 /* encode/base64.c in Sources */,
+				AA000006062 /* xpdev/strwrap.c in Sources */,
+				AA000006064 /* sftp/sftp_client.c in Sources */,
+				AA000006066 /* sftp/sftp_pkt.c in Sources */,
+				AA000006068 /* sftp/sftp_str.c in Sources */,
+				AA000006070 /* sftp/sftp_attr.c in Sources */,
+				AA000006074 /* xpdev/filewrap.c in Sources */,
+				AA000006076 /* xpdev/ini_file.c in Sources */,
+				AA000006078 /* xpdev/str_list.c in Sources */,
+				AA000006080 /* xpdev/genwrap.c in Sources */,
+				AA000006082 /* xpdev/dirwrap.c in Sources */,
+				AA000006084 /* xpdev/netwrap.c in Sources */,
+				AA000006086 /* xpdev/xpdatetime.c in Sources */,
+				AA000006088 /* xpdev/xpprintf.c in Sources */,
+				AA000006090 /* xpdev/datewrap.c in Sources */,
+				AA000007001 /* Colors.swift in Sources */,
+				AA0000000000000000000002 /* UIScale.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AA600000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"__unix__=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AA600001000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"__unix__=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AA600002000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				"CRYPTLIB_PLATFORM[sdk=iphoneos*]" = "ios-arm64";
+				"CRYPTLIB_PLATFORM[sdk=iphonesimulator*]" = "ios-simulator-arm64";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZV9CGL5BQJ;
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/TERMinator/Bridge",
+					"$(SRCROOT)/TERMinator/Bridge/cryptlib/include",
+					"$(SRCROOT)/TERMinator/Bridge/syncterm",
+					"$(SRCROOT)/TERMinator/Bridge/xpdev",
+					"$(SRCROOT)/TERMinator/Bridge/sftp",
+					"$(SRCROOT)/TERMinator/Bridge/encode",
+					"$(SRCROOT)/TERMinator/Bridge/uifc",
+					"$(SRCROOT)/TERMinator/Bridge/conio",
+					"$(SRCROOT)/TERMinator/Bridge/sbbs3",
+					"$(SRCROOT)/../src/conio",
+					"$(SRCROOT)/../src/syncterm",
+					"$(SRCROOT)/../src/sbbs3",
+					"$(SRCROOT)/../src/xpdev",
+				);
+				INFOPLIST_FILE = TERMinator/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TERMinator;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/TERMinator/Bridge/cryptlib/$(CRYPTLIB_PLATFORM)",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.JSONbourne.TERMinator-iOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "TERMinator/TERMinator-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AA600003000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				"CRYPTLIB_PLATFORM[sdk=iphoneos*]" = "ios-arm64";
+				"CRYPTLIB_PLATFORM[sdk=iphonesimulator*]" = "ios-simulator-arm64";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZV9CGL5BQJ;
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/TERMinator/Bridge",
+					"$(SRCROOT)/TERMinator/Bridge/cryptlib/include",
+					"$(SRCROOT)/TERMinator/Bridge/syncterm",
+					"$(SRCROOT)/TERMinator/Bridge/xpdev",
+					"$(SRCROOT)/TERMinator/Bridge/sftp",
+					"$(SRCROOT)/TERMinator/Bridge/encode",
+					"$(SRCROOT)/TERMinator/Bridge/uifc",
+					"$(SRCROOT)/TERMinator/Bridge/conio",
+					"$(SRCROOT)/TERMinator/Bridge/sbbs3",
+					"$(SRCROOT)/../src/conio",
+					"$(SRCROOT)/../src/syncterm",
+					"$(SRCROOT)/../src/sbbs3",
+					"$(SRCROOT)/../src/xpdev",
+				);
+				INFOPLIST_FILE = TERMinator/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TERMinator;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/TERMinator/Bridge/cryptlib/$(CRYPTLIB_PLATFORM)",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.JSONbourne.TERMinator-iOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "TERMinator/TERMinator-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA400000000 /* Build configuration list for PBXNativeTarget "TERMinator" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA600002000 /* Debug */,
+				AA600003000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA500001000 /* Build configuration list for PBXProject "TERMinator" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA600000000 /* Debug */,
+				AA600001000 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AA500000000 /* Project object */;
+}

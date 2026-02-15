@@ -1,0 +1,20 @@
+# Xcode build
+build/
+DerivedData/
+*.xcarchive
+
+# Xcode user-specific
+*.xcuserstate
+xcuserdata/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Claude Code
+.claude/
+
+# CocoaPods / SPM
+Pods/
+.build/

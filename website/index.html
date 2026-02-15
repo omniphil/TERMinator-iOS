@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TERMinator - Privacy Policy</title>
+    <link rel="canonical" href="https://privacy.deadmodemsociety.com/">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #c0c0c0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.7;
+            padding: 0;
+        }
+
+        header {
+            background: linear-gradient(180deg, #1a1a2e 0%, #0a0a0a 100%);
+            border-bottom: 1px solid #33ff33;
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-family: "Courier New", Courier, monospace;
+            color: #33ff33;
+            font-size: 2rem;
+            text-shadow: 0 0 10px rgba(51, 255, 51, 0.5);
+            margin-bottom: 0.25rem;
+        }
+
+        header p {
+            color: #888;
+            font-size: 0.95rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        h2 {
+            color: #33ff33;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1.2rem;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid #1a3a1a;
+        }
+
+        h2::before {
+            content: "> ";
+            opacity: 0.5;
+        }
+
+        p, li {
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        ul {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        li {
+            margin-bottom: 0.4rem;
+        }
+
+        strong {
+            color: #e0e0e0;
+        }
+
+        .highlight {
+            background: #0d1f0d;
+            border: 1px solid #1a3a1a;
+            border-radius: 6px;
+            padding: 1rem 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .highlight p {
+            margin-bottom: 0;
+            color: #aadcaa;
+        }
+
+        .effective-date {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 3rem;
+            padding-top: 1rem;
+            border-top: 1px solid #1a1a1a;
+        }
+
+        a {
+            color: #33ff33;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+            .container {
+                padding: 1.5rem 1rem 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>TERMinator</h1>
+        <p>Privacy Policy</p>
+    </header>
+
+    <div class="container">
+        <div class="highlight">
+            <p><strong>TL;DR:</strong> TERMinator does not collect, transmit, or share any of your personal data. Everything stays on your device.</p>
+        </div>
+
+        <h2>Introduction</h2>
+        <p>TERMinator is a terminal emulator for connecting to BBS (Bulletin Board System) servers via Telnet and SSH. This privacy policy explains how the app handles your information.</p>
+
+        <h2>Data Collection</h2>
+        <p>TERMinator does <strong>not</strong> collect any personal information. The app contains:</p>
+        <ul>
+            <li>No analytics or tracking</li>
+            <li>No advertising frameworks</li>
+            <li>No crash reporting services</li>
+            <li>No third-party SDKs that collect data</li>
+        </ul>
+
+        <h2>Data Stored on Your Device</h2>
+        <p>The following data is stored <strong>locally on your device only</strong> and is never transmitted to us or any third party:</p>
+        <ul>
+            <li><strong>Connection settings</strong> &mdash; BBS server names, addresses, ports, and display preferences you configure</li>
+            <li><strong>Passwords</strong> &mdash; Stored securely in the iOS Keychain, encrypted by the operating system</li>
+            <li><strong>Session logs</strong> &mdash; Optional terminal session logs saved to the app's Documents folder</li>
+            <li><strong>Downloaded files</strong> &mdash; Files received via ZMODEM transfer, saved to the app's Documents folder</li>
+            <li><strong>App preferences</strong> &mdash; Your display, sound, and orientation settings</li>
+        </ul>
+
+        <h2>Network Connections</h2>
+        <p>TERMinator only makes network connections that <strong>you explicitly initiate</strong> by connecting to a BBS server. The app connects directly to the server address you specify using the Telnet or SSH protocol. No data is routed through or sent to any intermediary servers.</p>
+        <p>The app does not phone home, check for updates from our servers, or make any background network requests.</p>
+
+        <h2>Third-Party Services</h2>
+        <p>TERMinator uses <strong>no third-party services</strong>. The app is built entirely with Apple's native frameworks. There are no external dependencies that could collect your data.</p>
+
+        <h2>Device Permissions</h2>
+        <p>TERMinator may request the following permissions:</p>
+        <ul>
+            <li><strong>Photo Library (Save Only)</strong> &mdash; Used only when you choose to save a terminal screenshot to your photo library. The app cannot read your existing photos.</li>
+            <li><strong>Local Network</strong> &mdash; Required to connect to BBS servers on your local network or the internet.</li>
+        </ul>
+
+        <h2>Data Sharing</h2>
+        <p>TERMinator does <strong>not</strong> share your data with any third parties. Your connection settings can be exported manually as a file for backup or transfer purposes &mdash; this is entirely under your control. Passwords are never included in exports.</p>
+
+        <h2>Data Retention &amp; Deletion</h2>
+        <p>All data is stored locally on your device. You can delete individual connection entries within the app, clear session logs, or remove all app data by deleting the app from your device.</p>
+
+        <h2>Children's Privacy</h2>
+        <p>TERMinator does not collect personal information from anyone, including children under the age of 13.</p>
+
+        <h2>Changes to This Policy</h2>
+        <p>If this privacy policy is updated, the revised version will be posted on this page with an updated effective date.</p>
+
+        <h2>Contact</h2>
+        <p>If you have questions about this privacy policy, please contact us at <a href="mailto:jsonbourneinnovations@gmail.com">jsonbourneinnovations@gmail.com</a>.</p>
+
+        <p class="effective-date">Effective Date: February 9, 2026</p>
+    </div>
+</body>
+</html>
