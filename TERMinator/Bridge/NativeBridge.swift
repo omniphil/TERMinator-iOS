@@ -11,6 +11,7 @@ final class NativeBridge {
     // Connection type constants
     static let CONN_TYPE_TELNET = 3
     static let CONN_TYPE_SSH = 5
+    static let CONN_TYPE_TELNETS = 13
 
     // Transfer state constants
     enum TransferState: Int {

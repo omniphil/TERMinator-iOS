@@ -303,6 +303,9 @@ bool native_connect(const char *host, int32_t port, int32_t protocol,
         g_bbs_config.type = CONN_TYPE_TELNET;
         g_bbs_config.conn_type = CONN_TYPE_TELNET;
 #endif
+    } else if (protocol == 13) {  // TelnetS (Telnet over TLS)
+        g_bbs_config.type = CONN_TYPE_TELNETS;
+        g_bbs_config.conn_type = CONN_TYPE_TELNETS;
     } else {
         g_bbs_config.type = CONN_TYPE_TELNET;
         g_bbs_config.conn_type = CONN_TYPE_TELNET;

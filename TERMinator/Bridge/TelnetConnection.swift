@@ -713,3 +713,204 @@ func swift_telnet_receive(_ buffer: UnsafeMutablePointer<UInt8>, _ maxLength: In
 func swift_telnet_set_raw_mode(_ enabled: Int32) {
     TelnetConnection.shared.setRawMode(enabled != 0)
 }
+
+// MARK: - TelnetS (Telnet over TLS) Proxy
+//
+// Uses a Unix socketpair to bridge NWConnection (TLS) with the C-side rlogin threads.
+// The C side gets a plain POSIX socket fd; the Swift side proxies data through
+// an NWConnection with TLS enabled. This keeps the existing telnet IAC parsing,
+// thread model, and ZMODEM support completely unchanged.
+
+class TelnetSProxy {
+    static let shared = TelnetSProxy()
+
+    private var connection: NWConnection?
+    private var proxyFD: Int32 = -1  // Swift-side fd (proxies to/from NWConnection)
+    private var cFD: Int32 = -1      // C-side fd (becomes rlogin_sock)
+    private let queue = DispatchQueue(label: "com.terminator.telnets", qos: .userInteractive)
+    private var isRunning = false
+
+    private init() {}
+
+    /// Connect to host:port via TLS. Returns the C-side socketpair fd, or -1 on failure.
+    func connect(host: String, port: Int) -> Int32 {
+        disconnect()
+
+        // Create socketpair
+        var fds: [Int32] = [0, 0]
+        guard socketpair(AF_UNIX, SOCK_STREAM, 0, &fds) == 0 else {
+            return -1
+        }
+        proxyFD = fds[0]  // Swift side
+        cFD = fds[1]      // C side (will become rlogin_sock)
+
+        // Create TLS parameters
+        let tlsOptions = NWProtocolTLS.Options()
+
+        // Accept ALL certificates including self-signed (most BBS sysops use self-signed)
+        sec_protocol_options_set_verify_block(tlsOptions.securityProtocolOptions, { _, trust, completionHandler in
+            completionHandler(true)
+        }, queue)
+
+        // Set minimum TLS version to 1.2
+        sec_protocol_options_set_min_tls_protocol_version(tlsOptions.securityProtocolOptions, .TLSv12)
+
+        let tcpOptions = NWProtocolTCP.Options()
+        tcpOptions.noDelay = true
+        tcpOptions.enableKeepalive = true
+        tcpOptions.keepaliveIdle = 10
+        tcpOptions.keepaliveInterval = 5
+        tcpOptions.keepaliveCount = 3
+        tcpOptions.connectionTimeout = 15
+
+        let params = NWParameters(tls: tlsOptions, tcp: tcpOptions)
+
+        let endpoint = NWEndpoint.hostPort(
+            host: NWEndpoint.Host(host),
+            port: NWEndpoint.Port(integerLiteral: UInt16(clamping: port))
+        )
+
+        connection = NWConnection(to: endpoint, using: params)
+
+        let semaphore = DispatchSemaphore(value: 0)
+        var connected = false
+
+        connection?.stateUpdateHandler = { [weak self] state in
+            switch state {
+            case .ready:
+                connected = true
+                self?.isRunning = true
+                semaphore.signal()
+            case .failed(let error):
+                print("[TelnetS] Connection failed: \(error)")
+                semaphore.signal()
+            case .cancelled:
+                self?.isRunning = false
+                semaphore.signal()
+            case .waiting(let error):
+                print("[TelnetS] Connection waiting: \(error)")
+            default:
+                break
+            }
+        }
+
+        connection?.start(queue: queue)
+
+        let result = semaphore.wait(timeout: .now() + 15.0)
+        if result == .timedOut || !connected {
+            print("[TelnetS] Connection timeout or failed")
+            disconnect()
+            return -1
+        }
+
+        // Start proxy loops
+        startProxyFromNetwork()
+        startProxyFromSocket()
+
+        return cFD
+    }
+
+    /// Disconnect and clean up
+    func disconnect() {
+        isRunning = false
+        connection?.cancel()
+        connection = nil
+
+        if proxyFD >= 0 {
+            close(proxyFD)
+            proxyFD = -1
+        }
+        // Don't close cFD here - the C side (rlogin threads) owns it
+        cFD = -1
+    }
+
+    // MARK: - Proxy Loops
+
+    /// Read from NWConnection (TLS) → write to proxyFD → C side reads from cFD
+    private func startProxyFromNetwork() {
+        guard let connection = connection else { return }
+
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] content, _, isComplete, error in
+            guard let self = self, self.isRunning else { return }
+
+            if let data = content, !data.isEmpty {
+                data.withUnsafeBytes { buffer in
+                    guard let ptr = buffer.baseAddress else { return }
+                    var remaining = data.count
+                    var offset = 0
+                    while remaining > 0 && self.isRunning {
+                        let written = write(self.proxyFD, ptr + offset, remaining)
+                        if written <= 0 {
+                            self.isRunning = false
+                            return
+                        }
+                        offset += written
+                        remaining -= written
+                    }
+                }
+            }
+
+            if isComplete || error != nil {
+                self.isRunning = false
+                // Close proxy fd to unblock the C side recv()
+                if self.proxyFD >= 0 {
+                    close(self.proxyFD)
+                    self.proxyFD = -1
+                }
+                return
+            }
+
+            // Continue receiving
+            self.startProxyFromNetwork()
+        }
+    }
+
+    /// Read from proxyFD (C side writes to cFD) → send to NWConnection (TLS)
+    private func startProxyFromSocket() {
+        DispatchQueue.global(qos: .userInteractive).async { [weak self] in
+            guard let self = self else { return }
+
+            let bufferSize = 65536
+            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+            defer { buffer.deallocate() }
+
+            while self.isRunning && self.proxyFD >= 0 {
+                let bytesRead = read(self.proxyFD, buffer, bufferSize)
+                if bytesRead <= 0 {
+                    // Socket closed or error
+                    self.isRunning = false
+                    break
+                }
+
+                let data = Data(bytes: buffer, count: bytesRead)
+                let semaphore = DispatchSemaphore(value: 0)
+
+                self.connection?.send(content: data, completion: .contentProcessed { error in
+                    if error != nil {
+                        self.isRunning = false
+                    }
+                    semaphore.signal()
+                })
+
+                let result = semaphore.wait(timeout: .now() + 10.0)
+                if result == .timedOut {
+                    self.isRunning = false
+                    break
+                }
+            }
+        }
+    }
+}
+
+// MARK: - TelnetS C Bridge Functions
+
+@_cdecl("swift_telnets_connect")
+func swift_telnets_connect(_ host: UnsafePointer<CChar>, _ port: Int32) -> Int32 {
+    let hostString = String(cString: host)
+    return TelnetSProxy.shared.connect(host: hostString, port: Int(port))
+}
+
+@_cdecl("swift_telnets_disconnect")
+func swift_telnets_disconnect() {
+    TelnetSProxy.shared.disconnect()
+}

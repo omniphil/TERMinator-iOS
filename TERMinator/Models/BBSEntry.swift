@@ -43,6 +43,7 @@ enum ScreenMode: Int, CaseIterable, Codable, Identifiable {
 enum ConnectionProtocol: Int, CaseIterable, Codable, Identifiable {
     case telnet = 3
     case ssh = 5
+    case telnetS = 13
 
     var id: Int { rawValue }
 
@@ -50,6 +51,7 @@ enum ConnectionProtocol: Int, CaseIterable, Codable, Identifiable {
         switch self {
         case .telnet: return "Telnet"
         case .ssh: return "SSH"
+        case .telnetS: return "TelnetS (TLS)"
         }
     }
 }
@@ -216,6 +218,7 @@ struct BBSEntry: Identifiable, Codable, Hashable {
         switch connectionProtocol {
         case .telnet: return 23
         case .ssh: return 22
+        case .telnetS: return 992
         }
     }
 

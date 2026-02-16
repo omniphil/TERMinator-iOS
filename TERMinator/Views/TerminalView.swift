@@ -235,7 +235,12 @@ class KeyboardInputView: UIView, UIKeyInput {
 
     func insertText(_ text: String) {
         for char in text {
-            onCharacter?(char)
+            // iOS virtual keyboard sends \n (LF) for Return, but terminals expect \r (CR)
+            if char == "\n" {
+                onCharacter?(Character("\r"))
+            } else {
+                onCharacter?(char)
+            }
         }
     }
 

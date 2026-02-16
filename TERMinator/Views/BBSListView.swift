@@ -250,6 +250,7 @@ struct BBSEntryRow: View {
         switch entry.connectionProtocol {
         case .telnet: return "network"
         case .ssh: return "lock.shield"
+        case .telnetS: return "lock.shield"
         }
     }
 }
@@ -300,10 +301,14 @@ struct BBSEditView: View {
                                 }
                             }
                             .onChange(of: connectionProtocol) { newValue in
-                                if port == "23" && newValue == .ssh {
-                                    port = "22"
-                                } else if port == "22" && newValue == .telnet {
-                                    port = "23"
+                                let oldPort = port
+                                // Auto-switch port when changing protocol if on a default port
+                                if oldPort == "23" || oldPort == "22" || oldPort == "992" {
+                                    switch newValue {
+                                    case .telnet: port = "23"
+                                    case .ssh: port = "22"
+                                    case .telnetS: port = "992"
+                                    }
                                 }
                             }
                         }

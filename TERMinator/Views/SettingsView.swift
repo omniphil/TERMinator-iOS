@@ -180,6 +180,9 @@ struct SettingsView: View {
 
             // Changelog
             DisclosureGroup("Changelog") {
+                changelogEntry("1.1.3",
+                    "TelnetS (Telnet over TLS) support",
+                    "Enter key fix for virtual keyboard")
                 changelogEntry("1.1.2",
                     "Pinch-to-zoom",
                     "Volume button scrollback",
@@ -221,6 +224,9 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Text("JSONBourne Innovations")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text("jsonbourneinnovations@gmail.com")
                     .font(.caption)
                     .foregroundColor(.secondary)
 

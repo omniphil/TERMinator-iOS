@@ -227,14 +227,97 @@ int serial_close(void) {
     return -1;
 }
 
-// Telnet+TLS - stub
-int telnets_connect(void *bbs) {
-    (void)bbs;
-    return -1;
+// Telnet+TLS (TelnetS) - uses socketpair + NWConnection TLS proxy in Swift
+#include "conn.h"
+#include "conn_telnet.h"
+#include "rlogin.h"
+
+// From telnet_io.h (can't include directly due to sbbs3/telnet.h type conflicts)
+extern unsigned char telnet_local_option[0x100];
+extern unsigned char telnet_remote_option[0x100];
+
+extern int telnet_log_level;
+
+// Swift bridge functions for TelnetS
+extern int swift_telnets_connect(const char *host, int port);
+extern void swift_telnets_disconnect(void);
+
+int telnets_connect(void *arg) {
+    struct bbslist *bbs = (struct bbslist *)arg;
+
+    telnet_log_level = bbs->telnet_loglevel;
+
+    // Call Swift to establish TLS connection and get socketpair fd
+    int fd = swift_telnets_connect(bbs->addr, bbs->port);
+    if (fd < 0)
+        return -1;
+
+    rlogin_sock = fd;
+
+    // Create connection buffers (same as telnet_connect)
+    if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
+        closesocket(rlogin_sock);
+        rlogin_sock = INVALID_SOCKET;
+        swift_telnets_disconnect();
+        return -1;
+    }
+    if (!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
+        destroy_conn_buf(&conn_inbuf);
+        closesocket(rlogin_sock);
+        rlogin_sock = INVALID_SOCKET;
+        swift_telnets_disconnect();
+        return -1;
+    }
+
+    conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE);
+    if (!conn_api.rd_buf) {
+        destroy_conn_buf(&conn_inbuf);
+        destroy_conn_buf(&conn_outbuf);
+        closesocket(rlogin_sock);
+        rlogin_sock = INVALID_SOCKET;
+        swift_telnets_disconnect();
+        return -1;
+    }
+    conn_api.rd_buf_size = BUFFER_SIZE;
+
+    conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE);
+    if (!conn_api.wr_buf) {
+        FREE_AND_NULL(conn_api.rd_buf);
+        destroy_conn_buf(&conn_inbuf);
+        destroy_conn_buf(&conn_outbuf);
+        closesocket(rlogin_sock);
+        rlogin_sock = INVALID_SOCKET;
+        swift_telnets_disconnect();
+        return -1;
+    }
+    conn_api.wr_buf_size = BUFFER_SIZE;
+
+    // Set up telnet parse callbacks (reuse telnet's IAC parsing)
+    memset(telnet_local_option, 0, sizeof(telnet_local_option));
+    memset(telnet_remote_option, 0, sizeof(telnet_remote_option));
+    conn_api.rx_parse_cb = telnet_rx_parse_cb;
+    conn_api.tx_parse_cb = telnet_tx_parse_cb;
+
+    telnet_deferred = bbs->defer_telnet_negotiation;
+    telnet_no_binary = bbs->telnet_no_binary;
+    strlcpy(term_name, get_emulation_str(bbs), sizeof(term_name));
+
+    // Start rlogin I/O threads (they read/write rlogin_sock)
+    _beginthread(rlogin_output_thread, 0, NULL);
+    _beginthread(rlogin_input_thread, 0, bbs);
+
+    if (!telnet_deferred)
+        send_initial_state();
+
+    return 0;
 }
 
 int telnets_close(void) {
-    return -1;
+    // Use rlogin_close to shut down threads and close socket
+    int ret = rlogin_close();
+    // Then tear down the Swift-side TLS proxy
+    swift_telnets_disconnect();
+    return ret;
 }
 
 // ============================================================================
