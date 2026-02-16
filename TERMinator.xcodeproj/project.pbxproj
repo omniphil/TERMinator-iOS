@@ -69,6 +69,10 @@
 		AA000008001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000008000 /* Assets.xcassets */; };
 		AA000008010 /* snapshot_absinthe.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008011 /* snapshot_absinthe.png */; };
 		AA000008012 /* snapshot_deadmodem.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008013 /* snapshot_deadmodem.png */; };
+		AA000008014 /* snapshot_20forbeers.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008015 /* snapshot_20forbeers.png */; };
+		AA000008016 /* snapshot_bottomlessabyss.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008017 /* snapshot_bottomlessabyss.png */; };
+		AA000008018 /* snapshot_diamondmine.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008019 /* snapshot_diamondmine.png */; };
+		AA000008020 /* snapshot_quantumwormhole.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008021 /* snapshot_quantumwormhole.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -150,6 +154,10 @@
 		AA000008000 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA000008011 /* snapshot_absinthe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_absinthe.png; sourceTree = "<group>"; };
 		AA000008013 /* snapshot_deadmodem.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_deadmodem.png; sourceTree = "<group>"; };
+		AA000008015 /* snapshot_20forbeers.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_20forbeers.png; sourceTree = "<group>"; };
+		AA000008017 /* snapshot_bottomlessabyss.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_bottomlessabyss.png; sourceTree = "<group>"; };
+		AA000008019 /* snapshot_diamondmine.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_diamondmine.png; sourceTree = "<group>"; };
+		AA000008021 /* snapshot_quantumwormhole.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_quantumwormhole.png; sourceTree = "<group>"; };
 		AA000009000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -326,6 +334,10 @@
 			children = (
 				AA000008011 /* snapshot_absinthe.png */,
 				AA000008013 /* snapshot_deadmodem.png */,
+				AA000008015 /* snapshot_20forbeers.png */,
+				AA000008017 /* snapshot_bottomlessabyss.png */,
+				AA000008019 /* snapshot_diamondmine.png */,
+				AA000008021 /* snapshot_quantumwormhole.png */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -391,6 +403,10 @@
 				AA000008001 /* Assets.xcassets in Resources */,
 				AA000008010 /* snapshot_absinthe.png in Resources */,
 				AA000008012 /* snapshot_deadmodem.png in Resources */,
+				AA000008014 /* snapshot_20forbeers.png in Resources */,
+				AA000008016 /* snapshot_bottomlessabyss.png in Resources */,
+				AA000008018 /* snapshot_diamondmine.png in Resources */,
+				AA000008020 /* snapshot_quantumwormhole.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

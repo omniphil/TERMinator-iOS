@@ -275,6 +275,8 @@ class BBSEntryStore: ObservableObject {
 
         if entries.isEmpty {
             addDefaultEntries()
+        } else {
+            migrateDefaults()
         }
 
         // Fill in missing snapshots for default entries from bundle
@@ -285,7 +287,11 @@ class BBSEntryStore: ObservableObject {
     private func repairDefaultSnapshots() {
         let snapshotMap: [String: String] = [
             "absinthebbs.net": "snapshot_absinthe",
-            "telnet.deadmodemsociety.com": "snapshot_deadmodem"
+            "telnet.deadmodemsociety.com": "snapshot_deadmodem",
+            "20forbeers.com": "snapshot_20forbeers",
+            "bbs.bottomlessabyss.net": "snapshot_bottomlessabyss",
+            "sbbs.dmine.net": "snapshot_diamondmine",
+            "bbs.erb.pw": "snapshot_quantumwormhole"
         ]
         var changed = false
         for i in entries.indices {
@@ -301,40 +307,76 @@ class BBSEntryStore: ObservableObject {
         }
     }
 
+    /// All default BBSes with their configuration and bundle snapshot resource names.
+    private static let allDefaults: [(name: String, host: String, port: Int, screenMode: ScreenMode, font: TerminalFont, id: UUID?, snapshotResource: String?)] = [
+        ("aBSiNTHE BBS", "absinthebbs.net", 1940, .mode80x40, .topazPlus, nil, "snapshot_absinthe"),
+        ("Dead Modem Society", "telnet.deadmodemsociety.com", 1337, .mode80x25, .cp437, deadModemSocietyUUID, "snapshot_deadmodem"),
+        ("20 For Beers", "20forbeers.com", 1337, .mode80x25, .cp437, nil, "snapshot_20forbeers"),
+        ("The Bottomless Abyss", "bbs.bottomlessabyss.net", 2023, .mode80x25, .cp437, nil, "snapshot_bottomlessabyss"),
+        ("Diamond Mine Online", "sbbs.dmine.net", 24, .mode80x25, .cp437, nil, "snapshot_diamondmine"),
+        ("The Quantum Wormhole", "bbs.erb.pw", 23, .mode80x25, .cp437, nil, "snapshot_quantumwormhole"),
+    ]
+
+    private static let currentDefaultsVersion = 2
+
     /// Add default BBS connections on fresh install.
     private func addDefaultEntries() {
-        // aBSiNTHE BBS - Amiga-style BBS
-        let absintheSnapshot: Data? = Bundle.main.url(forResource: "snapshot_absinthe", withExtension: "png")
-            .flatMap { try? Data(contentsOf: $0) }
-        let absintheBBS = BBSEntry(
-            name: "aBSiNTHE BBS",
-            host: "absinthebbs.net",
-            port: 1940,
-            connectionProtocol: .telnet,
-            screenMode: .mode80x40,
-            font: .topazPlus,
-            showStatusBar: true,
-            snapshotData: absintheSnapshot
-        )
-
-        // Dead Modem Society - DOS-style BBS
-        // Fixed UUID so Quick Connect 2 can default to it
-        let deadModemSnapshot: Data? = Bundle.main.url(forResource: "snapshot_deadmodem", withExtension: "png")
-            .flatMap { try? Data(contentsOf: $0) }
-        let deadModem = BBSEntry(
-            id: BBSEntryStore.deadModemSocietyUUID,
-            name: "Dead Modem Society",
-            host: "telnet.deadmodemsociety.com",
-            port: 1337,
-            connectionProtocol: .telnet,
-            screenMode: .mode80x25,
-            font: .cp437,
-            showStatusBar: true,
-            snapshotData: deadModemSnapshot
-        )
-
-        entries = [absintheBBS, deadModem]
+        entries = BBSEntryStore.allDefaults.map { def in
+            let snapshot: Data? = def.snapshotResource.flatMap { resource in
+                Bundle.main.url(forResource: resource, withExtension: "png")
+                    .flatMap { try? Data(contentsOf: $0) }
+            }
+            return BBSEntry(
+                id: def.id ?? UUID(),
+                name: def.name,
+                host: def.host,
+                port: def.port,
+                connectionProtocol: .telnet,
+                screenMode: def.screenMode,
+                font: def.font,
+                showStatusBar: true,
+                snapshotData: snapshot
+            )
+        }
+        UserDefaults.standard.set(BBSEntryStore.currentDefaultsVersion, forKey: "defaults_version")
         saveEntries()
+    }
+
+    /// Migrate new default BBSes for existing users, skipping duplicates by host+port.
+    private func migrateDefaults() {
+        let version = UserDefaults.standard.integer(forKey: "defaults_version")
+        if version >= BBSEntryStore.currentDefaultsVersion { return }
+
+        let existing = Set(entries.map { "\($0.host):\($0.port)" })
+        var added = 0
+
+        for def in BBSEntryStore.allDefaults {
+            let key = "\(def.host):\(def.port)"
+            if existing.contains(key) { continue }
+
+            let snapshot: Data? = def.snapshotResource.flatMap { resource in
+                Bundle.main.url(forResource: resource, withExtension: "png")
+                    .flatMap { try? Data(contentsOf: $0) }
+            }
+            let entry = BBSEntry(
+                id: def.id ?? UUID(),
+                name: def.name,
+                host: def.host,
+                port: def.port,
+                connectionProtocol: .telnet,
+                screenMode: def.screenMode,
+                font: def.font,
+                showStatusBar: true,
+                snapshotData: snapshot
+            )
+            entries.append(entry)
+            added += 1
+        }
+
+        UserDefaults.standard.set(BBSEntryStore.currentDefaultsVersion, forKey: "defaults_version")
+        if added > 0 {
+            saveEntries()
+        }
     }
 
     func saveEntries() {

@@ -180,6 +180,11 @@ struct SettingsView: View {
 
             // Changelog
             DisclosureGroup("Changelog") {
+                changelogEntry("1.1.4",
+                    "Added 4 new default BBSes with snapshots",
+                    "New defaults auto-added for existing users",
+                    "Fixed phonebook order lost when adding entries",
+                    "Fixed snapshots not refreshing in phonebook")
                 changelogEntry("1.1.3",
                     "TelnetS (Telnet over TLS) support",
                     "Enter key fix for virtual keyboard")
