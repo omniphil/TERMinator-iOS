@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 /// Home screen with splash image, quick connect slots, and navigation buttons.
 /// Matches the Android HomeActivity layout and styling.
@@ -703,28 +704,23 @@ struct PhonebookView: View {
     @State private var editingEntry: BBSEntry?
     @State private var selectedEntry: BBSEntry?
     @State private var pendingConnection: BBSEntry?
+    @State private var draggedEntryId: UUID?
+    @State private var previewSnapshotData: Data?
 
     var body: some View {
-        ZStack {
-            // Grid pattern background
-            Color.background.ignoresSafeArea()
-            GridPatternView()
-                .ignoresSafeArea()
+        VStack(spacing: 0) {
+            // Custom header matching main screen
+            phonebookHeader
 
-            VStack(spacing: 0) {
-                // Custom header matching main screen
-                phonebookHeader
-
-                // Content area
-                Group {
-                    if store.entries.isEmpty {
-                        emptyState
-                    } else {
-                        connectionsList
-                    }
-                }
+            // Content area
+            if store.entries.isEmpty {
+                emptyState
+            } else {
+                connectionsList
             }
         }
+        .background(GridPatternView().ignoresSafeArea().allowsHitTesting(false))
+        .background(Color.background.ignoresSafeArea())
         .fullScreenCover(isPresented: $showingAddSheet) {
             BBSEditView(entry: nil) { newEntry in
                 store.addEntry(newEntry)
@@ -759,6 +755,25 @@ struct PhonebookView: View {
                 TerminalContainerView(entry: entry, onDismiss: { selectedEntry = nil })
                     .ignoresSafeArea()
                     .transition(.move(edge: .bottom))
+            }
+        }
+        .overlay {
+            // Snapshot image preview
+            if let data = previewSnapshotData,
+               let uiImage = UIImage(data: data) {
+                Color.black.opacity(0.85)
+                    .ignoresSafeArea()
+                    .onTapGesture { previewSnapshotData = nil }
+                    .overlay {
+                        GeometryReader { geo in
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: geo.size.width * 0.9)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                        .onTapGesture { previewSnapshotData = nil }
+                    }
             }
         }
     }
@@ -858,79 +873,34 @@ struct PhonebookView: View {
 
     // MARK: - Connections List
 
-    private let rowHeight: CGFloat = 100
-    @State private var draggingEntry: BBSEntry?
-    @State private var dragOffset: CGFloat = 0
-    @State private var draggedOverEntry: BBSEntry?
-
     private var connectionsList: some View {
         ScrollView {
             LazyVStack(spacing: 8) {
-                ForEach(Array(store.entries.enumerated()), id: \.element.id) { index, entry in
-                    let isDragging = draggingEntry?.id == entry.id
-                    let isTarget = draggedOverEntry?.id == entry.id
-
-                    PhonebookEntryRow(entry: entry)
+                ForEach(store.entries) { entry in
+                    PhonebookEntryRow(entry: entry, onImageTap: entry.snapshotData != nil ? {
+                        previewSnapshotData = entry.snapshotData
+                    } : nil)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color(red: 0.102, green: 0.145, blue: 0.208))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(isTarget ? Color.accentColor : Color(red: 0.165, green: 0.208, blue: 0.271), lineWidth: isTarget ? 2 : 1)
+                                        .stroke(Color(red: 0.165, green: 0.208, blue: 0.271), lineWidth: 1)
                                 )
                         )
-                        .opacity(isDragging ? 0.5 : 1)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            if draggingEntry == nil {
-                                editingEntry = entry
-                            }
+                            editingEntry = entry
                         }
-                        .gesture(
-                            LongPressGesture(minimumDuration: 0.3)
-                                .sequenced(before: DragGesture())
-                                .onChanged { value in
-                                    switch value {
-                                    case .second(true, let drag):
-                                        if draggingEntry == nil {
-                                            draggingEntry = entry
-                                            let generator = UIImpactFeedbackGenerator(style: .medium)
-                                            generator.impactOccurred()
-                                        }
-                                        if let drag = drag {
-                                            dragOffset = drag.translation.height
-                                            let targetIndex = index + Int((drag.translation.height / rowHeight).rounded())
-                                            let clampedIndex = max(0, min(store.entries.count - 1, targetIndex))
-                                            if clampedIndex != index {
-                                                draggedOverEntry = store.entries[clampedIndex]
-                                            } else {
-                                                draggedOverEntry = nil
-                                            }
-                                        }
-                                    default:
-                                        break
-                                    }
-                                }
-                                .onEnded { value in
-                                    if let from = draggingEntry,
-                                       let fromIndex = store.entries.firstIndex(where: { $0.id == from.id }) {
-                                        let targetIndex = fromIndex + Int((dragOffset / rowHeight).rounded())
-                                        let clampedIndex = max(0, min(store.entries.count - 1, targetIndex))
-                                        if clampedIndex != fromIndex {
-                                            withAnimation {
-                                                store.entries.move(
-                                                    fromOffsets: IndexSet(integer: fromIndex),
-                                                    toOffset: clampedIndex > fromIndex ? clampedIndex + 1 : clampedIndex
-                                                )
-                                            }
-                                            store.saveEntries()
-                                        }
-                                    }
-                                    draggingEntry = nil
-                                    dragOffset = 0
-                                    draggedOverEntry = nil
-                                }
-                        )
+                        .onDrag {
+                            draggedEntryId = entry.id
+                            return NSItemProvider(object: entry.id.uuidString as NSString)
+                        }
+                        .onDrop(of: [UTType.text], delegate: PhonebookDropDelegate(
+                            entry: entry,
+                            store: store,
+                            draggedEntryId: $draggedEntryId
+                        ))
                 }
             }
             .padding(.horizontal, 12)
@@ -943,6 +913,7 @@ struct PhonebookView: View {
 
 struct PhonebookEntryRow: View {
     let entry: BBSEntry
+    var onImageTap: (() -> Void)? = nil
 
     private var thumbnailWidth: CGFloat {
         120 * UIScale.factor
@@ -963,6 +934,9 @@ struct PhonebookEntryRow: View {
                     .frame(width: thumbnailWidth, height: thumbnailHeight)
                     .cornerRadius(4)
                     .clipped()
+                    .onTapGesture {
+                        onImageTap?()
+                    }
             } else {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(Color.black)
@@ -999,6 +973,39 @@ struct PhonebookEntryRow: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 8)
+    }
+}
+
+// MARK: - Phonebook Drop Delegate
+
+struct PhonebookDropDelegate: DropDelegate {
+    let entry: BBSEntry
+    let store: BBSEntryStore
+    @Binding var draggedEntryId: UUID?
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggedEntryId = nil
+        store.saveEntries()
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let draggedId = draggedEntryId,
+              draggedId != entry.id,
+              let fromIndex = store.entries.firstIndex(where: { $0.id == draggedId }),
+              let toIndex = store.entries.firstIndex(where: { $0.id == entry.id })
+        else { return }
+
+        withAnimation {
+            store.entries.move(
+                fromOffsets: IndexSet(integer: fromIndex),
+                toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex
+            )
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
     }
 }
 

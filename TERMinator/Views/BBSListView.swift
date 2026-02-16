@@ -137,7 +137,7 @@ struct BBSListView: View {
                                 editingEntry = entry
                             }
                         }
-                        .gesture(
+                        .simultaneousGesture(
                             LongPressGesture(minimumDuration: 0.3)
                                 .sequenced(before: DragGesture())
                                 .onChanged { value in
