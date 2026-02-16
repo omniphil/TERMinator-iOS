@@ -468,6 +468,11 @@ final class NativeBridge {
     static func attrToBg(_ attr: Int) -> Int {
         return (attr >> 4) & 0x0F
     }
+
+    /// Check if cell has underline attribute (bit 23 of packed int).
+    static func isUnderline(_ cell: Int32) -> Bool {
+        return ((cell >> 23) & 1) == 1
+    }
 }
 
 // MARK: - C Function Declarations

@@ -119,6 +119,7 @@ struct cterminal {
 	int					started;		// Indicates that conio functions are being called
 	bool					c64reversemode;	// Commodore 64 reverse mode state
 	bool negative;
+	bool underline;
 	unsigned char		attr;			// Current attribute
 	uint32_t			fg_color;
 	uint32_t			bg_color;

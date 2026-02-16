@@ -291,7 +291,11 @@ class BBSEntryStore: ObservableObject {
             "20forbeers.com": "snapshot_20forbeers",
             "bbs.bottomlessabyss.net": "snapshot_bottomlessabyss",
             "sbbs.dmine.net": "snapshot_diamondmine",
-            "bbs.erb.pw": "snapshot_quantumwormhole"
+            "bbs.erb.pw": "snapshot_quantumwormhole",
+            "dura-bbs.net": "snapshot_duraeuropos",
+            "wizardsrainbow.com": "snapshot_wizardsrainbow",
+            "xibalba.l33t.codes": "snapshot_xibalba",
+            "d1st.org": "snapshot_distortion"
         ]
         var changed = false
         for i in entries.indices {
@@ -315,9 +319,13 @@ class BBSEntryStore: ObservableObject {
         ("The Bottomless Abyss", "bbs.bottomlessabyss.net", 2023, .mode80x25, .cp437, nil, "snapshot_bottomlessabyss"),
         ("Diamond Mine Online", "sbbs.dmine.net", 24, .mode80x25, .cp437, nil, "snapshot_diamondmine"),
         ("The Quantum Wormhole", "bbs.erb.pw", 23, .mode80x25, .cp437, nil, "snapshot_quantumwormhole"),
+        ("Dura-Europos", "dura-bbs.net", 6359, .mode80x25, .cp437, nil, "snapshot_duraeuropos"),
+        ("Wizard's Rainbow", "wizardsrainbow.com", 23, .mode80x25, .cp437, nil, "snapshot_wizardsrainbow"),
+        ("Xibalba", "xibalba.l33t.codes", 44510, .mode80x25, .cp437, nil, "snapshot_xibalba"),
+        ("Distortion", "d1st.org", 23, .mode80x25, .cp437, nil, "snapshot_distortion"),
     ]
 
-    private static let currentDefaultsVersion = 2
+    private static let currentDefaultsVersion = 3
 
     /// Add default BBS connections on fresh install.
     private func addDefaultEntries() {

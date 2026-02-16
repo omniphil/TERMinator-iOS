@@ -186,6 +186,9 @@ static int ice_mode_enabled = 0;
 // This persists across SGR commands until reset (SGR 0)
 static int bold_mode_enabled = 0;
 
+// Underline mode state - tracks ESC[4m / ESC[24m
+static int underline_enabled = 0;
+
 // Reset ANSI parser state for clean connection
 void cterm_reset_ansi_state(void) {
     ansi_state = 0;
@@ -193,6 +196,7 @@ void cterm_reset_ansi_state(void) {
     ansi_response_len = 0;
     ice_mode_enabled = 0;
     bold_mode_enabled = 0;
+    underline_enabled = 0;
     saved_cursor_x = 1;
     saved_cursor_y = 1;
 }
@@ -334,6 +338,8 @@ static void process_ansi_sequence(void) {
                 ciolib_textattr(7);
                 ice_mode_enabled = 0;
                 bold_mode_enabled = 0;
+                underline_enabled = 0;
+                ciolib_setunderline(false);
             }
             for (int i = 0; i < param_count; i++) {
                 int p = params[i];
@@ -341,6 +347,8 @@ static void process_ansi_sequence(void) {
                     ciolib_textattr(7);  // Reset
                     ice_mode_enabled = 0;
                     bold_mode_enabled = 0;
+                    underline_enabled = 0;
+                    ciolib_setunderline(false);
                 }
                 else if (p == 1) {
                     // Bold/bright - enable bright foreground mode
@@ -352,12 +360,22 @@ static void process_ansi_sequence(void) {
                     bold_mode_enabled = 0;
                     ciolib_lowvideo();
                 }
+                else if (p == 4) {
+                    // Underline
+                    underline_enabled = 1;
+                    ciolib_setunderline(true);
+                }
                 else if (p == 5) {
                     // Blink/iCE mode - enable bright backgrounds
                     ice_mode_enabled = 1;
                     ciolib_brightbackground();  // Also brighten current background
                 }
                 else if (p == 7) ciolib_reversevideo();  // Reverse video - swap fg/bg
+                else if (p == 24) {
+                    // SGR 24 - disable underline
+                    underline_enabled = 0;
+                    ciolib_setunderline(false);
+                }
                 else if (p == 25) {
                     // SGR 25 - disable blink/iCE mode
                     ice_mode_enabled = 0;

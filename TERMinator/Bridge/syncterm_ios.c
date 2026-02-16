@@ -685,6 +685,8 @@ const int32_t* native_get_screen_buffer(int32_t *count) {
             bg = (attr >> 4) & 0x0F;
         }
 
+        if (screen[i].flags & VMEM_FLAG_UNDERLINE)
+            fg |= 0x80u;
         g_screen_buffer_cache[i] = (int32_t)(ch | (attr << 8) | (fg << 16) | (bg << 24));
     }
 
@@ -1187,6 +1189,8 @@ const int32_t* native_get_scrollback_buffer(int32_t offset, int32_t count, int32
             // legacy path used by cterm) only sets ch + legacy_attr, leaving
             // vmem_cell.fg/bg at 0. This matches native_get_screen_buffer().
             unsigned int fg = attr & 0x0F;
+            if (cell->flags & VMEM_FLAG_UNDERLINE)
+                fg |= 0x80u;
             unsigned int bg = (attr >> 4) & 0x0F;
             g_scrollback_cache[arr_idx++] = (int32_t)(ch | (attr << 8) | (fg << 16) | (bg << 24));
         }

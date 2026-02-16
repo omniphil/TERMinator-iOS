@@ -65,8 +65,12 @@ struct HomeView: View {
         .onDisappear {
             stopGlitchEffect()
         }
-        .fullScreenCover(isPresented: $showingPhonebook) {
-            PhonebookView()
+        .overlay {
+            if showingPhonebook {
+                PhonebookView(onDismissPhonebook: { showingPhonebook = false })
+                    .ignoresSafeArea()
+                    .transition(.move(edge: .bottom))
+            }
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
@@ -79,16 +83,17 @@ struct HomeView: View {
                 assignQuickConnect(entry: entry, slot: wrapper.slot)
             }
         }
-        .fullScreenCover(isPresented: $showingTerminal) {
-            if let entry = selectedEntry {
-                TerminalContainerView(entry: entry)
-            } else {
-                Color.black.ignoresSafeArea()
+        .overlay {
+            // Terminal overlays (non-modal, ESC cannot dismiss)
+            if showingTerminal, let entry = selectedEntry {
+                TerminalContainerView(entry: entry, onDismiss: { showingTerminal = false })
+                    .ignoresSafeArea()
+                    .transition(.move(edge: .bottom))
             }
-        }
-        .fullScreenCover(isPresented: $showingDeepLinkTerminal) {
-            if let entry = deepLinkEntry {
-                TerminalContainerView(entry: entry)
+            if showingDeepLinkTerminal, let entry = deepLinkEntry {
+                TerminalContainerView(entry: entry, onDismiss: { showingDeepLinkTerminal = false })
+                    .ignoresSafeArea()
+                    .transition(.move(edge: .bottom))
             }
         }
         .onChange(of: deepLinkManager.pendingConnection) { pending in
@@ -692,7 +697,7 @@ struct QuickConnectPickerView: View {
 // MARK: - Phonebook View (Updated BBSListView)
 
 struct PhonebookView: View {
-    @Environment(\.dismiss) private var dismiss
+    var onDismissPhonebook: (() -> Void)? = nil
     @StateObject private var store = BBSEntryStore.shared
     @State private var showingAddSheet = false
     @State private var editingEntry: BBSEntry?
@@ -749,8 +754,12 @@ struct PhonebookView: View {
                 }
             )
         }
-        .fullScreenCover(item: $selectedEntry) { entry in
-            TerminalContainerView(entry: entry)
+        .overlay {
+            if let entry = selectedEntry {
+                TerminalContainerView(entry: entry, onDismiss: { selectedEntry = nil })
+                    .ignoresSafeArea()
+                    .transition(.move(edge: .bottom))
+            }
         }
     }
 
@@ -761,7 +770,7 @@ struct PhonebookView: View {
             HStack {
                 // Home button
                 Button {
-                    dismiss()
+                    onDismissPhonebook?()
                 } label: {
                     Image(systemName: "house.fill")
                         .font(.system(size: 20 * UIScale.factor))

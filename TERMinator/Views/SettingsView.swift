@@ -181,8 +181,7 @@ struct SettingsView: View {
             // Changelog
             DisclosureGroup("Changelog") {
                 changelogEntry("1.1.4",
-                    "Added 4 new default BBSes with snapshots",
-                    "New defaults auto-added for existing users",
+                    "URLs now visually underlined in terminal",
                     "Fixed phonebook order lost when adding entries",
                     "Fixed snapshots not refreshing in phonebook")
                 changelogEntry("1.1.3",
@@ -244,6 +243,9 @@ struct SettingsView: View {
                 Divider()
 
                 Text("Special thx to aNACHRONiST (aNSt) for the artwork and testing!")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text("He may be reached at: aNSt@absinthebbs.net for collaborations and commissions.")
                     .font(.caption)
                     .foregroundColor(.secondary)
 

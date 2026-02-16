@@ -284,6 +284,8 @@ struct vmem_cell {
 	uint8_t legacy_attr;
 	uint8_t ch;
 	uint8_t font;
+	uint8_t flags;
+#define VMEM_FLAG_UNDERLINE 0x01
 	/*
 	 * At least one byte in these colours must have 0x04 as an invalid value.
 	 * Since Graphics cannot be present in Prestel, the high byte of bg
@@ -521,6 +523,7 @@ CIOLIBEXPORT struct ciolib_screen * ciolib_savescreen(void);
 CIOLIBEXPORT void ciolib_freescreen(struct ciolib_screen *);
 CIOLIBEXPORT int ciolib_restorescreen(struct ciolib_screen *scrn);
 CIOLIBEXPORT void ciolib_setcolour(uint32_t fg, uint32_t bg);
+CIOLIBEXPORT void ciolib_setunderline(bool underline);
 CIOLIBEXPORT int ciolib_get_modepalette(uint32_t[16]);
 CIOLIBEXPORT int ciolib_set_modepalette(uint32_t[16]);
 CIOLIBEXPORT uint32_t ciolib_map_rgb(uint16_t r, uint16_t g, uint16_t b);
@@ -612,6 +615,7 @@ CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
 	#define freescreen(a)			ciolib_freescreen(a)
 	#define restorescreen(a)		ciolib_restorescreen(a)
 	#define setcolour(a,b)			ciolib_setcolour(a,b)
+	#define setunderline(a)			ciolib_setunderline(a)
 	#define get_modepalette(a)		ciolib_get_modepalette(a)
 	#define set_modepalette(a)		ciolib_set_modepalette(a)
 	#define map_rgb(a,b,c)			ciolib_map_rgb(a,b,c)

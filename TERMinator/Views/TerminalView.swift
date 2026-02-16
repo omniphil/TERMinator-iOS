@@ -228,6 +228,7 @@ struct TerminalUIViewRepresentable: UIViewRepresentable {
 
 class KeyboardInputView: UIView, UIKeyInput {
     var onCharacter: ((Character) -> Void)?
+    var onString: ((String) -> Void)?
 
     override var canBecomeFirstResponder: Bool { true }
 
@@ -235,7 +236,6 @@ class KeyboardInputView: UIView, UIKeyInput {
 
     func insertText(_ text: String) {
         for char in text {
-            // iOS virtual keyboard sends \n (LF) for Return, but terminals expect \r (CR)
             if char == "\n" {
                 onCharacter?(Character("\r"))
             } else {
@@ -245,11 +245,83 @@ class KeyboardInputView: UIView, UIKeyInput {
     }
 
     func deleteBackward() {
-        // Send backspace/delete character
         onCharacter?(Character(UnicodeScalar(127)))
     }
 
-    // Disable autocorrection and other text features
+    // MARK: - Hardware Keyboard Support
+
+    override var keyCommands: [UIKeyCommand]? {
+        var commands: [UIKeyCommand] = []
+
+        // ESC — send ESC byte to terminal (dismiss blocked by isModalInPresentation)
+        let esc = UIKeyCommand(input: UIKeyCommand.inputEscape, modifierFlags: [], action: #selector(handleEscape))
+        esc.wantsPriorityOverSystemBehavior = true
+        commands.append(esc)
+
+        // Arrow keys
+        commands.append(UIKeyCommand(input: UIKeyCommand.inputUpArrow, modifierFlags: [], action: #selector(handleUpArrow)))
+        commands.append(UIKeyCommand(input: UIKeyCommand.inputDownArrow, modifierFlags: [], action: #selector(handleDownArrow)))
+        commands.append(UIKeyCommand(input: UIKeyCommand.inputRightArrow, modifierFlags: [], action: #selector(handleRightArrow)))
+        commands.append(UIKeyCommand(input: UIKeyCommand.inputLeftArrow, modifierFlags: [], action: #selector(handleLeftArrow)))
+
+        // Tab
+        let tab = UIKeyCommand(input: "\t", modifierFlags: [], action: #selector(handleTab))
+        tab.wantsPriorityOverSystemBehavior = true
+        commands.append(tab)
+
+        // Control+letter (Ctrl+A through Ctrl+Z)
+        for i: UInt8 in 0..<26 {
+            let letter = String(UnicodeScalar(0x61 + i))
+            let cmd = UIKeyCommand(input: letter, modifierFlags: .control, action: #selector(handleCtrlLetter(_:)))
+            cmd.wantsPriorityOverSystemBehavior = true
+            commands.append(cmd)
+        }
+
+        // Note: Enter/Return is NOT in keyCommands — it flows through insertText("\n") naturally
+
+        return commands
+    }
+
+    @objc private func handleEscape() { onCharacter?(Character(UnicodeScalar(0x1B))) }
+    @objc private func handleUpArrow() { onString?("\u{1B}[A") }
+    @objc private func handleDownArrow() { onString?("\u{1B}[B") }
+    @objc private func handleRightArrow() { onString?("\u{1B}[C") }
+    @objc private func handleLeftArrow() { onString?("\u{1B}[D") }
+    @objc private func handleTab() { onCharacter?(Character(UnicodeScalar(9))) }
+
+    @objc private func handleCtrlLetter(_ command: UIKeyCommand) {
+        guard let input = command.input?.lowercased().first,
+              let ascii = input.asciiValue else { return }
+        onCharacter?(Character(UnicodeScalar(ascii & 0x1F)))
+    }
+
+    // Handle keys without UIKeyCommand input constants
+    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        for press in presses {
+            guard let key = press.key else { continue }
+            switch key.keyCode {
+            case .keyboardDeleteForward:
+                onString?("\u{1B}[3~")
+                return
+            case .keyboardHome:
+                onString?("\u{1B}[H")
+                return
+            case .keyboardEnd:
+                onString?("\u{1B}[F")
+                return
+            case .keyboardPageUp:
+                onString?("\u{1B}[5~")
+                return
+            case .keyboardPageDown:
+                onString?("\u{1B}[6~")
+                return
+            default:
+                break
+            }
+        }
+        super.pressesBegan(presses, with: event)
+    }
+
     var autocorrectionType: UITextAutocorrectionType = .no
     var autocapitalizationType: UITextAutocapitalizationType = .none
     var spellCheckingType: UITextSpellCheckingType = .no
@@ -261,16 +333,19 @@ class KeyboardInputView: UIView, UIKeyInput {
 struct KeyboardInputRepresentable: UIViewRepresentable {
     @Binding var isActive: Bool
     var onCharacter: (Character) -> Void
+    var onString: (String) -> Void
 
     func makeUIView(context: Context) -> KeyboardInputView {
         let view = KeyboardInputView()
         view.onCharacter = onCharacter
+        view.onString = onString
         view.backgroundColor = .clear
         return view
     }
 
     func updateUIView(_ uiView: KeyboardInputView, context: Context) {
         uiView.onCharacter = onCharacter
+        uiView.onString = onString
         if isActive && !uiView.isFirstResponder {
             DispatchQueue.main.async {
                 uiView.becomeFirstResponder()
@@ -305,11 +380,12 @@ struct TerminalView: View {
                     .ignoresSafeArea()
 
                 // Keyboard input handler (UIKit-based for reliability)
-                KeyboardInputRepresentable(isActive: $isKeyboardActive) { char in
+                KeyboardInputRepresentable(isActive: $isKeyboardActive, onCharacter: { char in
                     viewModel.sendCharacter(char)
-                }
+                }, onString: { string in
+                    viewModel.sendString(string)
+                })
                 .frame(width: 1, height: 1)
-                .opacity(0)
 
                 // Terminal view with gestures - fills available space
                 // Metal renderer with nearest-neighbor scaling (fixes black bars)
@@ -463,7 +539,7 @@ struct TerminalView: View {
                                 path.move(to: CGPoint(x: x, y: underlineY))
                                 path.addLine(to: CGPoint(x: x + cellWidth, y: underlineY))
                             }
-                            ctx.stroke(underlinePath, with: .color(.cyan), lineWidth: 1)
+                            ctx.stroke(underlinePath, with: .color(.cyan), lineWidth: 3)
                         }
                     } else if charCode != 32 {
                         // Fallback: draw using system font if bitmap not available
@@ -473,6 +549,16 @@ struct TerminalView: View {
                             .font(.system(size: cellHeight * 0.8, design: .monospaced))
                             .foregroundColor(fgColor)
                         ctx.draw(text, at: CGPoint(x: x + cellWidth / 2, y: y + cellHeight / 2), anchor: .center)
+                    }
+
+                    // Draw underline if set (ESC[4m)
+                    if NativeBridge.isUnderline(cell) {
+                        let underlineY = y + cellHeight - (cellHeight * 0.1)
+                        let underlinePath = Path { path in
+                            path.move(to: CGPoint(x: x, y: underlineY))
+                            path.addLine(to: CGPoint(x: x + cellWidth, y: underlineY))
+                        }
+                        ctx.stroke(underlinePath, with: .color(paletteColors[fgIndex]), lineWidth: 3)
                     }
 
                     // Draw cursor

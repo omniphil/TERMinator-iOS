@@ -73,6 +73,10 @@
 		AA000008016 /* snapshot_bottomlessabyss.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008017 /* snapshot_bottomlessabyss.png */; };
 		AA000008018 /* snapshot_diamondmine.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008019 /* snapshot_diamondmine.png */; };
 		AA000008020 /* snapshot_quantumwormhole.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008021 /* snapshot_quantumwormhole.png */; };
+		AA000008022 /* snapshot_duraeuropos.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008023 /* snapshot_duraeuropos.png */; };
+		AA000008024 /* snapshot_wizardsrainbow.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008025 /* snapshot_wizardsrainbow.png */; };
+		AA000008026 /* snapshot_xibalba.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008027 /* snapshot_xibalba.png */; };
+		AA000008028 /* snapshot_distortion.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008029 /* snapshot_distortion.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -158,6 +162,10 @@
 		AA000008017 /* snapshot_bottomlessabyss.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_bottomlessabyss.png; sourceTree = "<group>"; };
 		AA000008019 /* snapshot_diamondmine.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_diamondmine.png; sourceTree = "<group>"; };
 		AA000008021 /* snapshot_quantumwormhole.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_quantumwormhole.png; sourceTree = "<group>"; };
+		AA000008023 /* snapshot_duraeuropos.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_duraeuropos.png; sourceTree = "<group>"; };
+		AA000008025 /* snapshot_wizardsrainbow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_wizardsrainbow.png; sourceTree = "<group>"; };
+		AA000008027 /* snapshot_xibalba.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_xibalba.png; sourceTree = "<group>"; };
+		AA000008029 /* snapshot_distortion.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_distortion.png; sourceTree = "<group>"; };
 		AA000009000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -338,6 +346,10 @@
 				AA000008017 /* snapshot_bottomlessabyss.png */,
 				AA000008019 /* snapshot_diamondmine.png */,
 				AA000008021 /* snapshot_quantumwormhole.png */,
+				AA000008023 /* snapshot_duraeuropos.png */,
+				AA000008025 /* snapshot_wizardsrainbow.png */,
+				AA000008027 /* snapshot_xibalba.png */,
+				AA000008029 /* snapshot_distortion.png */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -407,6 +419,10 @@
 				AA000008016 /* snapshot_bottomlessabyss.png in Resources */,
 				AA000008018 /* snapshot_diamondmine.png in Resources */,
 				AA000008020 /* snapshot_quantumwormhole.png in Resources */,
+				AA000008022 /* snapshot_duraeuropos.png in Resources */,
+				AA000008024 /* snapshot_wizardsrainbow.png in Resources */,
+				AA000008026 /* snapshot_xibalba.png in Resources */,
+				AA000008028 /* snapshot_distortion.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

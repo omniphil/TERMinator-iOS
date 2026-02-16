@@ -14,6 +14,7 @@ struct BBSListView: View {
     @State private var draggedOverEntry: BBSEntry?
 
     var body: some View {
+        ZStack {
         NavigationStack {
             Group {
                 if store.entries.isEmpty {
@@ -59,12 +60,14 @@ struct BBSListView: View {
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
-            .fullScreenCover(isPresented: $showingTerminal) {
-                if let entry = selectedEntry {
-                    TerminalContainerView(entry: entry)
-                }
-            }
         }
+        // Terminal overlay (non-modal, ESC cannot dismiss)
+        if showingTerminal, let entry = selectedEntry {
+            TerminalContainerView(entry: entry, onDismiss: { showingTerminal = false })
+                .ignoresSafeArea()
+                .transition(.move(edge: .bottom))
+        }
+        } // ZStack
     }
 
     // MARK: - Empty State
@@ -692,7 +695,6 @@ struct RetroToggle: View {
 // MARK: - Terminal Container View
 
 struct TerminalContainerView: View {
-    @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = TerminalViewModel()
     @State private var ctrlActive = false
     @State private var showMenu = false
@@ -708,9 +710,11 @@ struct TerminalContainerView: View {
     @State private var disconnectMessage = ""
 
     let entry: BBSEntry
+    var onDismiss: (() -> Void)? = nil
 
-    init(entry: BBSEntry) {
+    init(entry: BBSEntry, onDismiss: (() -> Void)? = nil) {
         self.entry = entry
+        self.onDismiss = onDismiss
         _showStatusBar = State(initialValue: entry.showStatusBar)
     }
 
@@ -786,7 +790,7 @@ struct TerminalContainerView: View {
             Button("Disconnect", role: .destructive) {
                 viewModel.disconnect()
                 viewModel.cleanup()
-                dismiss()
+                onDismiss?()
             }
             Button("Cancel", role: .cancel) {}
         }
@@ -844,7 +848,7 @@ struct TerminalContainerView: View {
         .alert("Disconnected", isPresented: $showDisconnectAlert) {
             Button("OK") {
                 viewModel.cleanup()
-                dismiss()
+                onDismiss?()
             }
         } message: {
             Text(disconnectMessage)

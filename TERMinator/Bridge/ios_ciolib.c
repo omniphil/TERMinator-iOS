@@ -56,6 +56,7 @@ static struct ios_screen_state {
     int cursor_visible;
     int cursor_type;
     uint8_t current_attr;
+    uint8_t current_flags;
     uint32_t fg_color;
     uint32_t bg_color;
     int dirty;
@@ -294,6 +295,7 @@ static void ios_clreol(void) {
             ios_state.screen[idx].fg = ios_state.fg_color;
             ios_state.screen[idx].bg = ios_state.bg_color;
             ios_state.screen[idx].font = 0;
+            ios_state.screen[idx].flags = ios_state.current_flags;
         }
         mark_region_dirty(x, y, ios_state.width - 1, y);
     }
@@ -347,6 +349,7 @@ static int ios_puttext(int sx, int sy, int ex, int ey, void *buf) {
 
                 ios_state.screen[idx].ch = src[src_offset];
                 ios_state.screen[idx].legacy_attr = src[src_offset + 1];
+                ios_state.screen[idx].flags = 0;
             }
         }
         mark_region_dirty(sx - 1, sy - 1, ex - 1, ey - 1);
@@ -566,6 +569,7 @@ static int ios_putch(int c) {
                             ios_state.screen[idx2].fg = ios_state.fg_color;
                             ios_state.screen[idx2].bg = ios_state.bg_color;
                             ios_state.screen[idx2].font = 0;
+                            ios_state.screen[idx2].flags = ios_state.current_flags;
                         }
                         mark_screen_dirty();
                     }
@@ -583,6 +587,7 @@ static int ios_putch(int c) {
             ios_state.screen[idx].fg = ios_state.fg_color;
             ios_state.screen[idx].bg = ios_state.bg_color;
             ios_state.screen[idx].font = 0;
+            ios_state.screen[idx].flags = ios_state.current_flags;
             mark_cell_dirty(x, y);
 
             ios_state.cursor_x++;
@@ -654,6 +659,7 @@ static void ios_clrscr(void) {
                 ios_state.screen[i].fg = ios_state.fg_color;
                 ios_state.screen[i].bg = ios_state.bg_color;
                 ios_state.screen[i].font = 0;
+                ios_state.screen[i].flags = ios_state.current_flags;
             }
         }
         ios_state.cursor_x = 1;
@@ -820,6 +826,7 @@ static void ios_textmode(int mode) {
                     ios_state.screen[i].fg = 7;
                     ios_state.screen[i].bg = 0;
                     ios_state.screen[i].font = 0;
+                    ios_state.screen[i].flags = 0;
                 }
             }
         }
@@ -911,6 +918,7 @@ static void ios_wscroll(void) {
             ios_state.screen[idx].fg = ios_state.fg_color;
             ios_state.screen[idx].bg = ios_state.bg_color;
             ios_state.screen[idx].font = 0;
+            ios_state.screen[idx].flags = ios_state.current_flags;
         }
         mark_screen_dirty();
     }
@@ -974,6 +982,10 @@ static void ios_delline(void) {
                 if (!safe_add_int(last_line, i, &idx)) break;
                 ios_state.screen[idx].ch = ' ';
                 ios_state.screen[idx].legacy_attr = ios_state.current_attr;
+                ios_state.screen[idx].fg = ios_state.fg_color;
+                ios_state.screen[idx].bg = ios_state.bg_color;
+                ios_state.screen[idx].font = 0;
+                ios_state.screen[idx].flags = ios_state.current_flags;
             }
         }
         mark_region_dirty(0, y, ios_state.width - 1, ios_state.height - 1);
@@ -1026,6 +1038,10 @@ static void ios_insline(void) {
                     if (!safe_add_int(line_offset, i, &idx)) break;
                     ios_state.screen[idx].ch = ' ';
                     ios_state.screen[idx].legacy_attr = ios_state.current_attr;
+                    ios_state.screen[idx].fg = ios_state.fg_color;
+                    ios_state.screen[idx].bg = ios_state.bg_color;
+                    ios_state.screen[idx].font = 0;
+                    ios_state.screen[idx].flags = ios_state.current_flags;
                 }
             }
         }
@@ -1134,6 +1150,7 @@ int ios_ciolib_init(void) {
         ios_state.screen[i].fg = 7;
         ios_state.screen[i].bg = 0;
         ios_state.screen[i].font = 0;
+        ios_state.screen[i].flags = 0;
     }
 
     cio_textinfo.winleft = 1;
@@ -1246,6 +1263,7 @@ void ios_ciolib_resize(int width, int height) {
             new_screen[i].fg = ios_state.fg_color;
             new_screen[i].bg = ios_state.bg_color;
             new_screen[i].font = 0;
+            new_screen[i].flags = ios_state.current_flags;
         }
     }
 
@@ -1336,6 +1354,7 @@ void ios_ciolib_cleanup(void) {
 #undef attr2palette
 #undef setvideoflags
 #undef getvideoflags
+#undef setunderline
 
 void ciolib_gotoxy(int x, int y) {
     ios_gotoxy(x, y);
@@ -1501,6 +1520,15 @@ void ciolib_setcolour(uint32_t fg, uint32_t bg) {
     pthread_mutex_lock(&ios_state.mutex);
     ios_state.fg_color = fg;
     ios_state.bg_color = bg;
+    pthread_mutex_unlock(&ios_state.mutex);
+}
+
+void ciolib_setunderline(bool underline) {
+    pthread_mutex_lock(&ios_state.mutex);
+    if (underline)
+        ios_state.current_flags |= VMEM_FLAG_UNDERLINE;
+    else
+        ios_state.current_flags &= ~VMEM_FLAG_UNDERLINE;
     pthread_mutex_unlock(&ios_state.mutex);
 }
 
