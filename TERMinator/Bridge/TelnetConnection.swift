@@ -67,6 +67,24 @@ private enum TelnetCommand: UInt8 {
         super.init()
     }
 
+    /// Create TCP parameters with keepalive configured.
+    /// Aggressive keepalive (10s idle, 5s interval, 3 probes) helps the connection
+    /// survive short app backgrounding and prevents the remote BBS from dropping
+    /// an idle connection.
+    private func makeTCPParameters() -> NWParameters {
+        let tcpOptions = NWProtocolTCP.Options()
+        tcpOptions.noDelay = true
+        tcpOptions.enableKeepalive = true
+        tcpOptions.keepaliveIdle = 10      // seconds before first keepalive probe
+        tcpOptions.keepaliveInterval = 5   // seconds between probes
+        tcpOptions.keepaliveCount = 3      // probes before declaring dead
+        tcpOptions.connectionTimeout = 10  // seconds for initial connection
+
+        let params = NWParameters(tls: nil, tcp: tcpOptions)
+        params.allowLocalEndpointReuse = true
+        return params
+    }
+
     /// Connect to a host and port (async version)
     func connectAsync(host: String, port: Int) async -> Bool {
         guard port >= 1 && port <= 65535 else { return false }
@@ -79,10 +97,7 @@ private enum TelnetCommand: UInt8 {
             port: NWEndpoint.Port(integerLiteral: UInt16(clamping: port))
         )
 
-        // Create TCP connection with no TLS for Telnet
-        let parameters = NWParameters.tcp
-        parameters.allowLocalEndpointReuse = true
-
+        let parameters = makeTCPParameters()
         connection = NWConnection(to: endpoint, using: parameters)
 
         return await withCheckedContinuation { continuation in
@@ -143,10 +158,7 @@ private enum TelnetCommand: UInt8 {
             port: NWEndpoint.Port(integerLiteral: UInt16(clamping: port))
         )
 
-        // Create TCP connection with no TLS for Telnet
-        let parameters = NWParameters.tcp
-        parameters.allowLocalEndpointReuse = true
-
+        let parameters = makeTCPParameters()
         connection = NWConnection(to: endpoint, using: parameters)
 
         let semaphore = DispatchSemaphore(value: 0)

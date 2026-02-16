@@ -48,6 +48,9 @@ class TerminalViewModel: ObservableObject {
 
     @Published var detectedURLs: [DetectedURL] = []
 
+    /// Container size from GeometryReader, used for pan clamping
+    var containerSize: CGSize = .zero
+
     // Scrollback state
     @Published var scrollbackOffset: Int = 0  // 0 = live, >0 = lines scrolled back
     var isInScrollback: Bool { scrollbackOffset > 0 }
@@ -166,10 +169,54 @@ class TerminalViewModel: ObservableObject {
         "\u{00B0}", "\u{2219}", "\u{00B7}", "\u{221A}", "\u{207F}", "\u{00B2}", "\u{25A0}", "\u{00A0}"
     ]
 
+    /// Whether polling was active before the app backgrounded.
+    /// Used to restore polling only if it was running.
+    private var wasPollingBeforeBackground = false
+
     // MARK: - Initialization
 
     init() {
         setupTransferObserver()
+        setupLifecycleObservers()
+    }
+
+    /// Observe UIApplication background/foreground notifications to pause/resume polling.
+    private func setupLifecycleObservers() {
+        NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.pauseForBackground()
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.resumeFromBackground()
+            }
+            .store(in: &cancellables)
+    }
+
+    /// Pause polling when the app enters background.
+    /// The connection stays open (NWConnection + background task keeps it alive),
+    /// but we stop the timer so the C threads aren't driven during suspension.
+    private func pauseForBackground() {
+        wasPollingBeforeBackground = (pollingTimer != nil)
+        stopPolling()
+    }
+
+    /// Resume polling when the app returns to foreground.
+    private func resumeFromBackground() {
+        guard wasPollingBeforeBackground, connectionState == .connected else { return }
+
+        // Check if the connection survived backgrounding
+        if NativeBridge.shared.isConnected() {
+            startPolling()
+            updateScreen()
+        } else {
+            // Connection died while backgrounded
+            handleDisconnection()
+        }
     }
 
     private func setupTransferObserver() {
@@ -689,8 +736,25 @@ class TerminalViewModel: ObservableObject {
     }
 
     /// Update pan offset for scrolling around zoomed content.
+    /// Clamps so the content edges can't be dragged past the container edges.
     func updatePan(_ offset: CGSize) {
-        panOffset = offset
+        guard zoomLevel > 1.0, containerSize.width > 0, containerSize.height > 0 else {
+            panOffset = .zero
+            return
+        }
+
+        // Scaled content size
+        let contentWidth = containerSize.width * zoomLevel
+        let contentHeight = containerSize.height * zoomLevel
+
+        // Maximum pan is 0 (top-left aligned); minimum is container - content (negative)
+        let minX = containerSize.width - contentWidth   // negative
+        let minY = containerSize.height - contentHeight // negative
+
+        let clampedX = max(minX, min(0, offset.width))
+        let clampedY = max(minY, min(0, offset.height))
+
+        panOffset = CGSize(width: clampedX, height: clampedY)
     }
 
     // MARK: - Scrollback

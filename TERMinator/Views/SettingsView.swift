@@ -178,6 +178,16 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
 
+            // Changelog
+            DisclosureGroup("Changelog") {
+                changelogEntry("1.1.2",
+                    "Pinch-to-zoom",
+                    "Volume button scrollback",
+                    "Background keep-alive")
+                changelogEntry("1.1.1",
+                    "Initial release")
+            }
+
             // Credits
             VStack(alignment: .leading, spacing: 8) {
                 Text("Credits")
@@ -244,6 +254,23 @@ struct SettingsView: View {
         } footer: {
             Text("TERMinator - BBS Terminal Emulator")
         }
+    }
+
+    // MARK: - Changelog Helper
+
+    private func changelogEntry(_ version: String, _ items: String...) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(version)
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+            ForEach(items, id: \.self) { item in
+                Text("- \(item)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
     }
 
     // MARK: - Actions

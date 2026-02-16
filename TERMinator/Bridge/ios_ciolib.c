@@ -43,6 +43,9 @@ uint32_t ciolib_bg = 0;  // Black
 // Font data from allfonts.c (extern - actual data is in allfonts.c)
 extern struct conio_font_data_struct conio_fontdata[257];
 
+// Declared in syncterm_ios.c — saves one line into the scrollback ring buffer.
+extern void scrollback_save_line(const struct vmem_cell *line, int width);
+
 // iOS-specific screen state
 static struct ios_screen_state {
     struct vmem_cell *screen;
@@ -521,6 +524,12 @@ static int ios_wherey(void) {
 }
 
 static int ios_putch(int c) {
+    // Flag: if deferred wrap needs a scroll, we must save the top line
+    // to scrollback AFTER releasing ios_state.mutex (to avoid deadlock).
+    int need_scroll = 0;
+    struct vmem_cell saved_line[MAX_TERMINAL_WIDTH];
+    int saved_width = 0;
+
     pthread_mutex_lock(&ios_state.mutex);
     if (ios_state.screen) {
         // Deferred wrap: if a previous character was written at the last column,
@@ -532,7 +541,35 @@ static int ios_putch(int c) {
             ios_state.cursor_x = 1;
             ios_state.cursor_y++;
             if (ios_state.cursor_y > ios_state.height) {
+                // Need to scroll — save top line, shift screen up, blank bottom
                 ios_state.cursor_y = ios_state.height;
+
+                int last_line_offset;
+                if (safe_mult_int(ios_state.height - 1, ios_state.width, &last_line_offset)) {
+                    size_t move_size;
+                    if (safe_mult_size((size_t)last_line_offset, sizeof(struct vmem_cell), &move_size)) {
+                        // Save top row for scrollback
+                        saved_width = ios_state.width;
+                        if (saved_width > MAX_TERMINAL_WIDTH) saved_width = MAX_TERMINAL_WIDTH;
+                        memcpy(saved_line, ios_state.screen, saved_width * sizeof(struct vmem_cell));
+                        need_scroll = 1;
+
+                        memmove(ios_state.screen,
+                                ios_state.screen + ios_state.width,
+                                move_size);
+
+                        for (int i = 0; i < ios_state.width; i++) {
+                            int idx2;
+                            if (!safe_add_int(last_line_offset, i, &idx2)) break;
+                            ios_state.screen[idx2].ch = ' ';
+                            ios_state.screen[idx2].legacy_attr = ios_state.current_attr;
+                            ios_state.screen[idx2].fg = ios_state.fg_color;
+                            ios_state.screen[idx2].bg = ios_state.bg_color;
+                            ios_state.screen[idx2].font = 0;
+                        }
+                        mark_screen_dirty();
+                    }
+                }
             }
         }
 
@@ -558,6 +595,12 @@ static int ios_putch(int c) {
         }
     }
     pthread_mutex_unlock(&ios_state.mutex);
+
+    // Save the scrolled-off line to scrollback (g_lock already held by caller)
+    if (need_scroll && saved_width > 0) {
+        scrollback_save_line(saved_line, saved_width);
+    }
+
     return c;
 }
 
@@ -578,8 +621,33 @@ static void ios_clrscr(void) {
     pthread_mutex_lock(&ios_state.mutex);
     ios_state.pending_wrap = 0;
     if (ios_state.screen) {
+        int w = ios_state.width;
+        int h = ios_state.height;
+
+        // Save current screen content to scrollback before clearing.
+        // Find the last row that has any non-space content.
+        int last_nonempty_row = -1;
+        for (int row = h - 1; row >= 0; row--) {
+            for (int col = 0; col < w; col++) {
+                unsigned char ch = ios_state.screen[row * w + col].ch;
+                if (ch != ' ' && ch != 0) {
+                    last_nonempty_row = row;
+                    goto found_last;
+                }
+            }
+        }
+        found_last:
+
+        // Save rows 0..last_nonempty_row to scrollback ring buffer.
+        // scrollback_save_line() is lock-free; caller (native_process_data)
+        // already holds g_lock so the scrollback fields are safe to modify.
+        for (int row = 0; row <= last_nonempty_row; row++) {
+            scrollback_save_line(&ios_state.screen[row * w], w);
+        }
+
+        // Now clear the screen
         int screen_size;
-        if (validate_dimensions(ios_state.width, ios_state.height, &screen_size)) {
+        if (validate_dimensions(w, h, &screen_size)) {
             for (int i = 0; i < screen_size; i++) {
                 ios_state.screen[i].ch = ' ';
                 ios_state.screen[i].legacy_attr = ios_state.current_attr;
@@ -802,6 +870,11 @@ static int ios_movetext(int sx, int sy, int ex, int ey, int dx, int dy) {
 }
 
 static void ios_wscroll(void) {
+    // Stack buffer to hold the top row before it's overwritten by memmove.
+    // Max width is MAX_TERMINAL_WIDTH (1000); 1000 * sizeof(vmem_cell) ≈ 20 KB.
+    struct vmem_cell saved_line[MAX_TERMINAL_WIDTH];
+    int saved_width = 0;
+
     pthread_mutex_lock(&ios_state.mutex);
     ios_state.pending_wrap = 0;
     if (ios_state.screen && ios_state.height > 1) {
@@ -817,10 +890,17 @@ static void ios_wscroll(void) {
             return;
         }
 
+        // Save the top row before it gets overwritten
+        saved_width = ios_state.width;
+        if (saved_width > MAX_TERMINAL_WIDTH) saved_width = MAX_TERMINAL_WIDTH;
+        memcpy(saved_line, ios_state.screen, saved_width * sizeof(struct vmem_cell));
+
+        // Scroll: shift everything up by one row
         memmove(ios_state.screen,
                 ios_state.screen + ios_state.width,
                 move_size);
 
+        // Blank the new bottom row
         for (int i = 0; i < ios_state.width; i++) {
             int idx;
             if (!safe_add_int(last_line_offset, i, &idx)) {
@@ -835,6 +915,12 @@ static void ios_wscroll(void) {
         mark_screen_dirty();
     }
     pthread_mutex_unlock(&ios_state.mutex);
+
+    // Save the captured top row into the scrollback ring buffer.
+    // scrollback_save_line() is lock-free; caller already holds g_lock.
+    if (saved_width > 0) {
+        scrollback_save_line(saved_line, saved_width);
+    }
 }
 
 static void ios_window(int sx, int sy, int ex, int ey) {

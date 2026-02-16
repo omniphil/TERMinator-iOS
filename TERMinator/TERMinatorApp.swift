@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Manages deep link (telnet:// URL) connections
 class DeepLinkManager: ObservableObject {
@@ -44,6 +45,10 @@ struct TERMinatorApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var deepLinkManager = DeepLinkManager.shared
 
+    /// Background task identifier — keeps the process alive for ~30 seconds
+    /// after the app enters background so the TCP connection isn't killed.
+    @State private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+
     init() {
         // Initialize native bridge
         let filesDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path
@@ -61,17 +66,31 @@ struct TERMinatorApp: App {
         .onChange(of: scenePhase) { newPhase in
             switch newPhase {
             case .active:
-                // App became active
-                break
+                // App returned to foreground — end background task if running
+                endBackgroundTask()
             case .inactive:
-                // App became inactive
                 break
             case .background:
-                // App went to background - save state if needed
                 BBSEntryStore.shared.saveEntries()
+                // Request extended execution time to keep the connection alive
+                beginBackgroundTask()
             @unknown default:
                 break
             }
         }
+    }
+
+    private func beginBackgroundTask() {
+        guard backgroundTaskID == .invalid else { return }
+        backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "KeepConnection") { [self] in
+            // Expiration handler — iOS is about to suspend us
+            endBackgroundTask()
+        }
+    }
+
+    private func endBackgroundTask() {
+        guard backgroundTaskID != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(backgroundTaskID)
+        backgroundTaskID = .invalid
     }
 }

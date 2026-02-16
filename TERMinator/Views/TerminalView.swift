@@ -312,6 +312,8 @@ struct TerminalView: View {
                     viewModel.rendererDidBecomeReady()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .scaleEffect(viewModel.zoomLevel, anchor: .topLeading)
+                .offset(x: viewModel.panOffset.width, y: viewModel.panOffset.height)
                 .clipped() // Clip content that extends beyond view bounds
                 .contentShape(Rectangle())
                 .simultaneousGesture(tapGesture(in: geometry))
@@ -346,6 +348,7 @@ struct TerminalView: View {
             .onAppear {
                 lastZoomLevel = viewModel.zoomLevel
                 dragStartOffset = viewModel.panOffset
+                viewModel.containerSize = geometry.size
                 // Load font bitmap on appear (needed for proper initialization)
                 // Note: Also loaded after 3-sec delay in connect() for rendering
                 viewModel.loadFontBitmap()
@@ -353,6 +356,25 @@ struct TerminalView: View {
                 // Auto-show keyboard on appear
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     isKeyboardActive = true
+                }
+
+                // Start volume button observation for scrollback
+                VolumeButtonManager.shared.startObserving()
+            }
+            .onDisappear {
+                VolumeButtonManager.shared.stopObserving()
+            }
+            .onChange(of: geometry.size) { newSize in
+                viewModel.containerSize = newSize
+            }
+            .onReceive(VolumeButtonManager.shared.$scrollEvent) { direction in
+                guard let direction = direction else { return }
+                let scrollAmount = 3 // lines per press
+                switch direction {
+                case .up:
+                    viewModel.setScrollbackOffset(viewModel.scrollbackOffset + scrollAmount)
+                case .down:
+                    viewModel.setScrollbackOffset(viewModel.scrollbackOffset - scrollAmount)
                 }
             }
         }

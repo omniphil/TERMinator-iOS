@@ -39,14 +39,8 @@ struct HelpView: View {
                         }
 
                         helpSubsection(title: "Scrollback") {
-                            bulletPoint("Swipe down to scroll through terminal history")
-                            bulletPoint("Swipe up to return toward live screen")
-                            bulletPoint("Any keyboard input returns to live screen")
-                            bulletPoint("Double-tap also returns to live screen")
-                        }
-
-                        helpSubsection(title: "Pan") {
-                            Text("When zoomed past 100%, drag with one finger to pan.")
+                            bulletPoint("Volume Up to scroll back through history")
+                            bulletPoint("Volume Down to scroll forward")
                         }
 
                         helpSubsection(title: "Keyboard") {

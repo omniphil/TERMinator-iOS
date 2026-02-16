@@ -1072,6 +1072,44 @@ void native_clear_upload_queue(void) {
 // MARK: - Scrollback Functions
 // ============================================================================
 
+/// Save one screen line into the cterm scrollback ring buffer.
+/// IMPORTANT: Caller must already hold g_lock. The call chain is:
+///   native_process_data() [holds g_lock] → cterm_write() → ios_wscroll()
+/// so g_lock is always held when this function is reached.
+void scrollback_save_line(const struct vmem_cell *line, int width) {
+    if (!g_cterm || !g_cterm->scrollback || width <= 0) {
+        return;
+    }
+
+    int cols = g_cterm->backwidth;
+    int cap  = g_cterm->backlines;
+    int pos  = g_cterm->backpos;
+
+    if (cols <= 0 || cap <= 0) {
+        return;
+    }
+
+    // Copy the line into the ring buffer at the current write position
+    int copy_cols = (width < cols) ? width : cols;
+    struct vmem_cell *dest = g_cterm->scrollback + pos * cols;
+    memcpy(dest, line, copy_cols * sizeof(struct vmem_cell));
+
+    // Blank any remaining columns (if screen is narrower than scrollback)
+    for (int i = copy_cols; i < cols; i++) {
+        dest[i].ch = ' ';
+        dest[i].legacy_attr = 7;
+        dest[i].fg = 7;
+        dest[i].bg = 0;
+        dest[i].font = 0;
+    }
+
+    // Advance ring position
+    g_cterm->backpos = (pos + 1) % cap;
+    if (g_cterm->backfilled < cap) {
+        g_cterm->backfilled++;
+    }
+}
+
 bool native_get_scrollback_info(int32_t *filled, int32_t *capacity, int32_t *columns) {
     pthread_mutex_lock(&g_lock);
 
@@ -1101,7 +1139,8 @@ const int32_t* native_get_scrollback_buffer(int32_t offset, int32_t count, int32
 
     int filled = g_cterm->backfilled;
     int capacity = g_cterm->backlines;
-    int cols = g_cterm->backwidth;
+    int back_cols = g_cterm->backwidth;   // ring buffer stride (may be 132)
+    int screen_cols = g_cterm->width;     // visible screen width (typically 80)
     int backpos = g_cterm->backpos;
 
     if (offset < 0 || count <= 0 || offset >= filled) {
@@ -1114,29 +1153,38 @@ const int32_t* native_get_scrollback_buffer(int32_t offset, int32_t count, int32
         count = filled - offset;
     }
 
-    int size = count * cols;
+    // Output uses screen_cols per row so it matches the display buffer stride
+    int out_cols = (screen_cols > 0 && screen_cols < back_cols) ? screen_cols : back_cols;
+    int size = count * out_cols;
     if (size > (132 * 100)) {
         size = 132 * 100;
-        count = size / cols;
+        count = size / out_cols;
     }
 
     struct vmem_cell *scrollback = g_cterm->scrollback;
     int arr_idx = 0;
 
-    for (int line = 0; line < count && arr_idx < size; line++) {
+    // Iterate oldest-first so the output is in chronological order.
+    // offset+count-1 is the oldest visible line, offset is the most recent.
+    for (int line = count - 1; line >= 0 && arr_idx < size; line--) {
         int lines_back = offset + line;
         int ring_idx = (backpos - 1 - lines_back + capacity * 2) % capacity;
         if (ring_idx < 0 || ring_idx >= capacity) continue;
 
-        for (int col = 0; col < cols && arr_idx < size; col++) {
-            int cell_idx = ring_idx * cols + col;
-            if (cell_idx < 0 || cell_idx >= capacity * cols) continue;
+        // Output only out_cols (screen width) cells, but index into
+        // the ring at back_cols stride
+        for (int col = 0; col < out_cols && arr_idx < size; col++) {
+            int cell_idx = ring_idx * back_cols + col;
+            if (cell_idx < 0 || cell_idx >= capacity * back_cols) continue;
             struct vmem_cell *cell = &scrollback[cell_idx];
 
             unsigned int ch = cell->ch & 0xFF;
             unsigned int attr = cell->legacy_attr & 0xFF;
-            unsigned int fg = cell->fg & 0xFF;
-            unsigned int bg = cell->bg & 0xFF;
+            // Use legacy_attr as canonical color source — ios_puttext() (the
+            // legacy path used by cterm) only sets ch + legacy_attr, leaving
+            // vmem_cell.fg/bg at 0. This matches native_get_screen_buffer().
+            unsigned int fg = attr & 0x0F;
+            unsigned int bg = (attr >> 4) & 0x0F;
             g_scrollback_cache[arr_idx++] = (int32_t)(ch | (attr << 8) | (fg << 16) | (bg << 24));
         }
     }
