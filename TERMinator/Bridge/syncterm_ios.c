@@ -55,8 +55,9 @@ static int g_initialized = 0;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 
 // Terminal dimensions
-static int g_term_width = 80;
-static int g_term_height = 25;
+// Non-static: also used by ios_stubs.c for get_cterm_size/get_term_win_size
+int g_term_width = 80;
+int g_term_height = 25;
 
 // Current font ID
 static int g_current_font_id = 0;
@@ -86,6 +87,12 @@ static volatile int g_upload_file_queued = 0;
 
 // Bell detection
 static volatile int g_bell_detected = 0;
+
+// Audio command buffer (OSC 800 / TAP)
+#define AUDIO_CMD_BUFFER_SIZE 4096
+static char g_audio_cmd_buffer[AUDIO_CMD_BUFFER_SIZE];
+static volatile int g_audio_cmd_ready = 0;
+static pthread_mutex_t g_audio_lock = PTHREAD_MUTEX_INITIALIZER;
 
 // Connection statistics
 static volatile uint64_t g_bytes_sent = 0;
@@ -685,6 +692,7 @@ const int32_t* native_get_screen_buffer(int32_t *count) {
             bg = (attr >> 4) & 0x0F;
         }
 
+        fg &= 0x7Fu; // Mask to 7 bits so color values don't collide with underline bit
         if (screen[i].flags & VMEM_FLAG_UNDERLINE)
             fg |= 0x80u;
         g_screen_buffer_cache[i] = (int32_t)(ch | (attr << 8) | (fg << 16) | (bg << 24));
@@ -729,6 +737,10 @@ void native_get_cursor_pos(int32_t *x, int32_t *y) {
 
 bool native_is_cursor_visible(void) {
     return ios_ciolib_is_cursor_visible();
+}
+
+bool native_cursor_type_changed(void) {
+    return ios_ciolib_cursor_type_changed();
 }
 
 bool native_is_screen_dirty(void) {
@@ -833,7 +845,29 @@ bool native_set_font_by_id(int32_t fontId) {
 
 void native_clear_screen(void) {
     pthread_mutex_lock(&g_lock);
-    if (g_cterm) {
+    if (g_cterm && g_initialized) {
+        // Destroy old cterm to fully reset terminal state (colors, cursor, modes)
+        cterm_end(g_cterm, 0);
+        g_cterm = NULL;
+
+        // Clear and reuse existing scrollback buffer
+        if (g_scrollback) {
+            int scrollback_cols = g_term_width > 132 ? g_term_width : 132;
+            size_t scrollback_size = (size_t)g_scrollback_lines * scrollback_cols * sizeof(struct vmem_cell);
+            if (scrollback_size <= MAX_SCROLLBACK_BYTES) {
+                memset(g_scrollback, 0, scrollback_size);
+            }
+        }
+
+        // Recreate cterm with fresh state
+        int scrollback_cols = g_term_width > 132 ? g_term_width : 132;
+        g_cterm = cterm_init(g_term_height, g_term_width, 1, 1,
+                             g_scrollback_lines, scrollback_cols,
+                             g_scrollback, CTERM_EMULATION_ANSI_BBS);
+        if (g_cterm) {
+            cterm_start(g_cterm);
+        }
+    } else if (g_cterm) {
         cterm_clearscreen(g_cterm, 7);
     }
     pthread_mutex_unlock(&g_lock);
@@ -872,13 +906,29 @@ void native_set_hide_status_line(bool hide) {
 // Declare the Swift bridge function
 extern void swift_telnet_set_terminal_size(int width, int height);
 
+// iOS mode indices to native SyncTERM SCREEN_MODE_* enum values
+static const int ios_to_native_screen_mode[] = {
+    SCREEN_MODE_80X25,   // iOS 0 -> 80x25
+    SCREEN_MODE_80X30,   // iOS 1 -> 80x30
+    SCREEN_MODE_80X50,   // iOS 2 -> 80x50
+    SCREEN_MODE_132X25,  // iOS 3 -> 132x25
+    SCREEN_MODE_132X50,  // iOS 4 -> 132x50
+    SCREEN_MODE_80X43,   // iOS 5 -> 80x40 (closest: 80x43)
+    SCREEN_MODE_132X30,  // iOS 6 -> 132x30
+    SCREEN_MODE_132X43,  // iOS 7 -> 132x40 (closest: 132x43)
+};
+#define IOS_SCREEN_MODE_COUNT (sizeof(ios_to_native_screen_mode) / sizeof(ios_to_native_screen_mode[0]))
+
 void native_set_screen_mode(int32_t mode) {
     pthread_mutex_lock(&g_lock);
-    g_screen_mode = mode;
+    if (mode >= 0 && mode < (int)IOS_SCREEN_MODE_COUNT) {
+        g_screen_mode = ios_to_native_screen_mode[mode];
+    } else {
+        g_screen_mode = SCREEN_MODE_80X25;
+    }
     pthread_mutex_unlock(&g_lock);
 
     // Convert screen mode to dimensions and resize terminal
-    // 0=80x25, 1=80x30, 2=80x50, 3=132x25, 4=132x50, 5=80x40
     int width = 80, height = 25;
     switch (mode) {
         case 0: width = 80;  height = 25; break;
@@ -887,6 +937,8 @@ void native_set_screen_mode(int32_t mode) {
         case 3: width = 132; height = 25; break;
         case 4: width = 132; height = 50; break;
         case 5: width = 80;  height = 40; break;
+        case 6: width = 132; height = 30; break;
+        case 7: width = 132; height = 40; break;
         default: width = 80; height = 25; break;
     }
 
@@ -1211,6 +1263,36 @@ bool native_check_bell(void) {
     g_bell_detected = 0;
     pthread_mutex_unlock(&g_lock);
     return detected;
+}
+
+// ============================================================================
+// MARK: - Audio Command Buffer (OSC 800 / TAP)
+// ============================================================================
+
+/// Called from syncterm_stubs.c when an OSC 800 sequence is parsed.
+void ios_audio_command(const char *cmd, int len) {
+    if (!cmd || len <= 0 || len >= AUDIO_CMD_BUFFER_SIZE) return;
+
+    pthread_mutex_lock(&g_audio_lock);
+    memcpy(g_audio_cmd_buffer, cmd, len);
+    g_audio_cmd_buffer[len] = '\0';
+    g_audio_cmd_ready = 1;
+    pthread_mutex_unlock(&g_audio_lock);
+}
+
+bool native_check_audio_command(void) {
+    return g_audio_cmd_ready != 0;
+}
+
+const char* native_get_audio_command(void) {
+    pthread_mutex_lock(&g_audio_lock);
+    if (!g_audio_cmd_ready) {
+        pthread_mutex_unlock(&g_audio_lock);
+        return NULL;
+    }
+    g_audio_cmd_ready = 0;
+    pthread_mutex_unlock(&g_audio_lock);
+    return g_audio_cmd_buffer;
 }
 
 // ============================================================================

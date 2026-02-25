@@ -277,6 +277,7 @@ struct BBSEditView: View {
     @State private var screenMode: ScreenMode = .mode80x25
     @State private var font: TerminalFont = .cp437
     @State private var showStatusBar: Bool = true
+    @State private var showButtonBar: Bool = true
     @State private var autoConnect: Bool = false
     @State private var showingDeleteConfirmation = false
 
@@ -349,6 +350,7 @@ struct BBSEditView: View {
                                 }
 
                                 RetroToggle(label: "Show Status Bar", isOn: $showStatusBar)
+                                RetroToggle(label: "Show Button Bar", isOn: $showButtonBar)
                             }
                         }
                     }
@@ -528,6 +530,7 @@ struct BBSEditView: View {
         newEntry.screenMode = screenMode
         newEntry.font = font
         newEntry.showStatusBar = showStatusBar
+        newEntry.showButtonBar = showButtonBar
         newEntry.autoConnect = autoConnect
 
         // Save password to Keychain
@@ -548,6 +551,7 @@ struct BBSEditView: View {
         screenMode = entry.screenMode
         font = entry.font
         showStatusBar = entry.showStatusBar
+        showButtonBar = entry.showButtonBar
         autoConnect = entry.autoConnect
     }
 
@@ -703,11 +707,13 @@ struct TerminalContainerView: View {
     @State private var screenshotSaved = false
     @State private var screenshotError: String?
     @State private var showStatusBar: Bool
-    @State private var showCursor: Bool = true
+    @State private var showButtonBar: Bool
     @State private var showingFilePicker = false
     @State private var pasteError = false
     @State private var showDisconnectAlert = false
     @State private var disconnectMessage = ""
+    @State private var keyboardHeight: CGFloat = 0
+    @State private var textCopied = false
 
     let entry: BBSEntry
     var onDismiss: (() -> Void)? = nil
@@ -716,6 +722,14 @@ struct TerminalContainerView: View {
         self.entry = entry
         self.onDismiss = onDismiss
         _showStatusBar = State(initialValue: entry.showStatusBar)
+        _showButtonBar = State(initialValue: entry.showButtonBar)
+    }
+
+    /// Top safe area inset so content starts below the iOS status bar.
+    private var topSafeArea: CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first?.safeAreaInsets.top ?? 0
     }
 
     var body: some View {
@@ -725,8 +739,17 @@ struct TerminalContainerView: View {
 
             VStack(spacing: 0) {
                 // Terminal view area - aligned to top
-                TerminalView(viewModel: viewModel)
+                TerminalView(viewModel: viewModel, onTripleTap: {
+                    // Hide keyboard
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    showMenu = true
+                })
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+                // Copy action bar when selecting
+                if viewModel.isSelecting {
+                    selectionActionBar
+                }
 
                 // Connection status bar (like Android row 26)
                 if showStatusBar {
@@ -734,8 +757,13 @@ struct TerminalContainerView: View {
                 }
 
                 // Special keys toolbar
-                specialKeysToolbar
+                if showButtonBar {
+                    specialKeysToolbar
+                }
             }
+            .padding(.top, topSafeArea)
+            .padding(.bottom, keyboardHeight)
+            .animation(.easeOut(duration: 0.25), value: keyboardHeight)
 
             // Connection status overlay (centered)
             if viewModel.connectionState == .connecting {
@@ -746,7 +774,10 @@ struct TerminalContainerView: View {
                     .background(Color.black.opacity(0.8))
                     .cornerRadius(8)
             }
+
+
         } // End outer ZStack
+        .ignoresSafeArea(.keyboard)
         .preferredColorScheme(.dark)
         .applyOrientationLock()
         .onAppear {
@@ -757,16 +788,29 @@ struct TerminalContainerView: View {
             stopConnectionTimer()
             viewModel.cleanup()
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+            if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                keyboardHeight = frame.height
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardHeight = 0
+        }
         .confirmationDialog("Terminal Menu", isPresented: $showMenu) {
             Button("Paste Text") {
                 pasteFromClipboard()
             }
-            Button(showCursor ? "Hide Cursor" : "Show Cursor") {
-                showCursor.toggle()
-                viewModel.setCursorVisible(showCursor)
+            Button("Select Text") {
+                viewModel.startSelectionCentered()
+            }
+            Button(viewModel.userHideCursor ? "Show Cursor" : "Hide Cursor") {
+                viewModel.setCursorVisible(viewModel.userHideCursor)
             }
             Button(showStatusBar ? "Hide Status Bar" : "Show Status Bar") {
                 showStatusBar.toggle()
+            }
+            Button(showButtonBar ? "Hide Button Bar" : "Show Button Bar") {
+                showButtonBar.toggle()
             }
             Button("Send File (ZMODEM)") {
                 // Delay to let confirmationDialog dismiss before presenting fileImporter
@@ -845,6 +889,11 @@ struct TerminalContainerView: View {
         } message: {
             Text("Clipboard is empty")
         }
+        .alert("Copied", isPresented: $textCopied) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Text copied to clipboard")
+        }
         .alert("Disconnected", isPresented: $showDisconnectAlert) {
             Button("OK") {
                 viewModel.cleanup()
@@ -896,6 +945,48 @@ struct TerminalContainerView: View {
             return
         }
         viewModel.sendString(text)
+    }
+
+    // MARK: - Selection Action Bar
+
+    private var selectionActionBar: some View {
+        HStack {
+            Button {
+                copySelectedText()
+            } label: {
+                Label("Copy", systemImage: "doc.on.doc")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.blue)
+            .cornerRadius(6)
+
+            Spacer()
+
+            Button {
+                viewModel.cancelSelection()
+            } label: {
+                Text("Cancel")
+                    .font(.system(size: 14))
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.black.opacity(0.85))
+    }
+
+    /// Copy the selected text to the clipboard.
+    private func copySelectedText() {
+        if let text = viewModel.getSelectedText() {
+            UIPasteboard.general.string = text
+            viewModel.cancelSelection()
+            textCopied = true
+        }
     }
 
     // MARK: - Connection Status Bar

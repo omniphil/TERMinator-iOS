@@ -22,15 +22,20 @@ struct HelpView: View {
                         }
 
                         helpSubsection(title: "Menu Options") {
-                            Text("Tap the menu button (\u{22EE}) for:")
+                            Text("Tap the menu button (\u{22EE}) or triple-tap the terminal:")
                             bulletPoint("Paste Text - paste from clipboard")
                             bulletPoint("Show/Hide Cursor")
                             bulletPoint("Show/Hide Status Bar")
+                            bulletPoint("Show/Hide Button Bar")
                             bulletPoint("Send File (ZMODEM) - upload a file")
                             bulletPoint("Capture Screenshot - save to Photos")
                             bulletPoint("Save Thumbnail - set Phonebook image")
                             bulletPoint("Toggle Logging - record session")
                             bulletPoint("Disconnect - close connection")
+                        }
+
+                        helpSubsection(title: "Triple-Tap Menu") {
+                            Text("Triple-tap anywhere on the terminal to open the menu. This works even when the button bar is hidden.")
                         }
 
                         helpSubsection(title: "Zoom") {

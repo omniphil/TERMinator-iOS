@@ -55,6 +55,7 @@ static struct ios_screen_state {
     int cursor_y;
     int cursor_visible;
     int cursor_type;
+    int cursor_type_changed;  // flag: BBS explicitly set cursor type
     uint8_t current_attr;
     uint8_t current_flags;
     uint32_t fg_color;
@@ -77,6 +78,7 @@ static struct ios_screen_state {
     .cursor_y = 1,
     .cursor_visible = 1,
     .cursor_type = _NORMALCURSOR,
+    .cursor_type_changed = 0,
     .current_attr = 7,
     .fg_color = 7,
     .bg_color = 0,
@@ -178,6 +180,14 @@ int ios_ciolib_get_cursor_y(void) {
 
 bool ios_ciolib_is_cursor_visible(void) {
     return ios_state.cursor_visible && ios_state.cursor_type != _NOCURSOR;
+}
+
+bool ios_ciolib_cursor_type_changed(void) {
+    pthread_mutex_lock(&ios_state.mutex);
+    bool changed = ios_state.cursor_type_changed != 0;
+    ios_state.cursor_type_changed = 0;
+    pthread_mutex_unlock(&ios_state.mutex);
+    return changed;
 }
 
 bool ios_ciolib_is_dirty(void) {
@@ -690,6 +700,7 @@ static void ios_setcursortype(int type) {
     pthread_mutex_lock(&ios_state.mutex);
     ios_state.cursor_type = type;
     ios_state.cursor_visible = (type != _NOCURSOR);
+    ios_state.cursor_type_changed = 1;
     pthread_mutex_unlock(&ios_state.mutex);
 }
 

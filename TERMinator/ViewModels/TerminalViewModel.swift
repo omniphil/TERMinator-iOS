@@ -35,7 +35,8 @@ class TerminalViewModel: ObservableObject {
     @Published var screenRows: Int = 25
     @Published var cursorX: Int = 0
     @Published var cursorY: Int = 0
-    @Published var cursorVisible: Bool = true
+    @Published var cursorVisible: Bool = true  // BBS-controlled via escape codes
+    @Published var userHideCursor: Bool = false   // Cursor on by default; idle threshold hides during active drawing
     @Published var palette: [Int32] = []
 
     @Published var isLogging: Bool = false
@@ -50,6 +51,17 @@ class TerminalViewModel: ObservableObject {
 
     /// Container size from GeometryReader, used for pan clamping
     var containerSize: CGSize = .zero
+
+    // Text selection state
+    @Published var isSelecting: Bool = false
+    @Published var selectionAnchorCol: Int = -1
+    @Published var selectionAnchorRow: Int = -1
+    @Published var selectionEndCol: Int = -1
+    @Published var selectionEndRow: Int = -1
+    var selectionMinCol: Int { min(selectionAnchorCol, selectionEndCol) }
+    var selectionMinRow: Int { min(selectionAnchorRow, selectionEndRow) }
+    var selectionMaxCol: Int { max(selectionAnchorCol, selectionEndCol) }
+    var selectionMaxRow: Int { max(selectionAnchorRow, selectionEndRow) }
 
     // Scrollback state
     @Published var scrollbackOffset: Int = 0  // 0 = live, >0 = lines scrolled back
@@ -71,6 +83,28 @@ class TerminalViewModel: ObservableObject {
     // Screen buffer version counter - incremented when buffer changes.
     // Used by Metal renderer to skip re-rendering when nothing changed.
     private(set) var screenBufferVersion: Int = 0
+
+    // Blink state for ANSI blink attribute (toggled every 500ms)
+    private(set) var blinkOn: Bool = true
+    private var lastBlinkToggle: TimeInterval = 0
+    private let blinkInterval: TimeInterval = 0.5
+
+    // Cursor idle threshold — only show cursor after screen has been idle
+    // for this long (no data flowing). Matches SyncTERM behavior where
+    // cursor stays hidden during active BBS drawing.
+    private(set) var lastScreenUpdateTime: TimeInterval = 0
+    private let cursorIdleThresholdMs: Double = 200
+
+    /// Whether the screen has been idle long enough to show the cursor.
+    var screenIsIdle: Bool {
+        let now = ProcessInfo.processInfo.systemUptime
+        return (now - lastScreenUpdateTime) * 1000 > cursorIdleThresholdMs
+    }
+
+    // Cursor blink state (separate from ANSI character blink)
+    private(set) var cursorBlinkOn: Bool = true
+    private var lastCursorBlinkToggle: TimeInterval = 0
+    private let cursorBlinkInterval: TimeInterval = 0.53  // ~530ms, matches SyncTERM
 
     // MARK: - Private Properties
 
@@ -172,6 +206,9 @@ class TerminalViewModel: ObservableObject {
     /// Whether polling was active before the app backgrounded.
     /// Used to restore polling only if it was running.
     private var wasPollingBeforeBackground = false
+
+    /// Track previous screen rows to detect mode switches (e.g. 80x25 -> 80x50)
+    private var previousScreenRows: Int = 0
 
     // MARK: - Initialization
 
@@ -327,6 +364,7 @@ class TerminalViewModel: ObservableObject {
             stopLogging()
         }
 
+        SoundtrackManager.shared.stop()
         NativeBridge.shared.disconnect()
         connectionState = .disconnected
     }
@@ -403,8 +441,32 @@ class TerminalViewModel: ObservableObject {
             BellManager.shared.playBell()
         }
 
+        // Check for audio command (OSC 800 / TAP)
+        if NativeBridge.shared.checkAudioCommand() {
+            if let cmd = NativeBridge.shared.getAudioCommand() {
+                SoundtrackManager.shared.handleCommand(cmd)
+            }
+        }
+
+        // Toggle blink state every 500ms
+        let now = ProcessInfo.processInfo.systemUptime
+        if now - lastBlinkToggle >= blinkInterval {
+            blinkOn.toggle()
+            lastBlinkToggle = now
+            // Force redraw for blinking cells even if screen isn't dirty
+            displayBufferVersion += 1
+        }
+
+        // Toggle cursor blink state (~530ms)
+        if now - lastCursorBlinkToggle >= cursorBlinkInterval {
+            cursorBlinkOn.toggle()
+            lastCursorBlinkToggle = now
+            displayBufferVersion += 1
+        }
+
         // Update screen if dirty
         if NativeBridge.shared.isScreenDirty() || result > 0 {
+            lastScreenUpdateTime = now
             updateScreen()
         }
 
@@ -417,6 +479,7 @@ class TerminalViewModel: ObservableObject {
     private func handleDisconnection() {
         // Stop polling first to prevent re-entry
         stopPolling()
+        SoundtrackManager.shared.stop()
 
         // Process any remaining data in the buffer before showing disconnect
         var processedMore = true
@@ -449,6 +512,12 @@ class TerminalViewModel: ObservableObject {
         let size = NativeBridge.shared.getScreenSize()
         screenColumns = size.columns
         screenRows = size.rows
+
+        // Reload font when screen rows change (e.g. 80x25 -> 80x50 mode switch)
+        if screenRows != previousScreenRows && previousScreenRows > 0 {
+            loadFontBitmap()
+        }
+        previousScreenRows = screenRows
 
         // Get screen buffer
         if let buffer = NativeBridge.shared.getScreenBuffer() {
@@ -546,7 +615,7 @@ class TerminalViewModel: ObservableObject {
 
     /// Set cursor visibility manually (for toggle feature).
     func setCursorVisible(_ visible: Bool) {
-        cursorVisible = visible
+        userHideCursor = !visible
     }
 
     // MARK: - Logging
@@ -782,6 +851,88 @@ class TerminalViewModel: ObservableObject {
         displayBufferVersion += 1
     }
 
+    // MARK: - Text Selection
+
+    /// Start text selection at the given terminal cell.
+    func startSelection(col: Int, row: Int) {
+        let c = max(0, min(col, screenColumns - 1))
+        let r = max(0, min(row, screenRows - 1))
+        isSelecting = true
+        selectionAnchorCol = c
+        selectionAnchorRow = r
+        selectionEndCol = c
+        selectionEndRow = r
+    }
+
+    /// Update the end point of the selection.
+    func updateSelection(col: Int, row: Int) {
+        guard isSelecting else { return }
+        selectionEndCol = max(0, min(col, screenColumns - 1))
+        selectionEndRow = max(0, min(row, screenRows - 1))
+    }
+
+    /// Update the anchor (start) point of the selection independently.
+    func updateSelectionAnchor(col: Int, row: Int) {
+        guard isSelecting else { return }
+        selectionAnchorCol = max(0, min(col, screenColumns - 1))
+        selectionAnchorRow = max(0, min(row, screenRows - 1))
+    }
+
+    /// Cancel any active selection.
+    func cancelSelection() {
+        guard isSelecting else { return }
+        isSelecting = false
+        selectionAnchorCol = -1
+        selectionAnchorRow = -1
+        selectionEndCol = -1
+        selectionEndRow = -1
+    }
+
+    /// Start selection covering the center ~60% of the screen.
+    func startSelectionCentered() {
+        isSelecting = true
+        let padCol = max(1, screenColumns / 5)   // ~20% from each side
+        let padRow = max(1, screenRows / 5)
+        selectionAnchorCol = padCol
+        selectionAnchorRow = padRow
+        selectionEndCol = screenColumns - 1 - padCol
+        selectionEndRow = screenRows - 1 - padRow
+    }
+
+    /// Extract selected text from the terminal buffer, mapping to Unicode.
+    func getSelectedText() -> String? {
+        guard isSelecting, selectionAnchorCol >= 0 else { return nil }
+
+        let minCol = selectionMinCol
+        let maxCol = selectionMaxCol
+        let minRow = selectionMinRow
+        let maxRow = selectionMaxRow
+
+        let buffer = scrollbackOffset > 0 ? displayBuffer : screenBuffer
+        guard !buffer.isEmpty else { return nil }
+
+        var lines: [String] = []
+        for row in minRow...maxRow {
+            var rowStr = ""
+            for col in minCol...maxCol {
+                let index = row * screenColumns + col
+                guard index >= 0 && index < buffer.count else {
+                    rowStr.append(" ")
+                    continue
+                }
+                let cell = buffer[index]
+                let charCode = Int(cell & 0xFF)
+                let mapped = mapCP437Char(charCode)
+                rowStr.append(mapped == "\0" ? " " : mapped)
+            }
+            // Trim trailing spaces per line
+            lines.append(String(rowStr.reversed().drop(while: { $0 == " " }).reversed()))
+        }
+
+        let result = lines.joined(separator: "\n")
+        return result.isEmpty ? nil : result
+    }
+
     /// Rebuild the composite display buffer from scrollback + screen data.
     private func rebuildDisplayBuffer() {
         if scrollbackOffset == 0 {
@@ -955,6 +1106,7 @@ class TerminalViewModel: ObservableObject {
         cursorX = 0
         cursorY = 0
         cursorVisible = true
+        userHideCursor = false
 
         // Reset screen dimensions to defaults
         screenColumns = 80
@@ -994,6 +1146,7 @@ class TerminalViewModel: ObservableObject {
         if isLogging {
             stopLogging()
         }
+        SoundtrackManager.shared.stop()
         TransferManager.shared.cleanup()
         cancellables.removeAll()
         glyphCache.removeAllObjects()
@@ -1144,8 +1297,14 @@ class TerminalViewModel: ObservableObject {
                 let cell = screenBuffer[index]
                 let cellUnsigned = UInt32(bitPattern: cell)
                 let charCode = Int(cellUnsigned & 0xFF)
-                let fgIndex = Int((cellUnsigned >> 16) & 0x0F)
-                let bgIndex = Int((cellUnsigned >> 24) & 0x0F)
+                let attr = Int((cellUnsigned >> 8) & 0xFF)
+                // Use legacy_attr for colors (always reliably populated by native code)
+                let fgIndex = attr & 0x0F        // bits 0-3 (0-15)
+                let bgIndex = (attr >> 4) & 0x07  // bits 4-6 (0-7)
+
+                // Blink detection: bit 7 of legacy_attr
+                let isBlink = (attr & 0x80) != 0
+                let hideForeground = isBlink && !blinkOn
 
                 let fgColor = getColorForIndex(fgIndex)
                 let bgColor = getColorForIndex(bgIndex)
@@ -1180,7 +1339,7 @@ class TerminalViewModel: ObservableObject {
                         let termX = cellStartX + destX
                         let pixelIdx = rowStart + termX
                         guard pixelIdx < pixelCount else { continue }
-                        pixels[pixelIdx] = isSet ? fgPixel : bgPixel
+                        pixels[pixelIdx] = (isSet && !hideForeground) ? fgPixel : bgPixel
                     }
                 }
             }

@@ -9,9 +9,12 @@ struct HomeView: View {
     @EnvironmentObject var deepLinkManager: DeepLinkManager
     @State private var showingPhonebook = false
     @State private var showingSettings = false
+    @State private var showingChat = false
     @State private var selectedEntry: BBSEntry?
     @State private var showingTerminal = false
     @State private var showingQuickConnectPicker: Int? = nil
+
+    @AppStorage("chat_enabled") private var chatEnabled = true
 
     // Deep link connection state
     @State private var deepLinkEntry: BBSEntry?
@@ -70,7 +73,17 @@ struct HomeView: View {
             if showingPhonebook {
                 PhonebookView(onDismissPhonebook: { showingPhonebook = false })
                     .ignoresSafeArea()
-                    .transition(.move(edge: .bottom))
+                    .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .opacity))
+            }
+        }
+        .overlay {
+            if showingChat {
+                ChatView(onDismiss: { showingChat = false }, onShowPhonebook: {
+                    showingChat = false
+                    showingPhonebook = true
+                })
+                    .ignoresSafeArea(.container)
+                    .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .opacity))
             }
         }
         .sheet(isPresented: $showingSettings) {
@@ -89,12 +102,12 @@ struct HomeView: View {
             if showingTerminal, let entry = selectedEntry {
                 TerminalContainerView(entry: entry, onDismiss: { showingTerminal = false })
                     .ignoresSafeArea()
-                    .transition(.move(edge: .bottom))
+                    .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .opacity))
             }
             if showingDeepLinkTerminal, let entry = deepLinkEntry {
                 TerminalContainerView(entry: entry, onDismiss: { showingDeepLinkTerminal = false })
                     .ignoresSafeArea()
-                    .transition(.move(edge: .bottom))
+                    .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .opacity))
             }
         }
         .onChange(of: deepLinkManager.pendingConnection) { pending in
@@ -275,6 +288,16 @@ struct HomeView: View {
                     }
                     .frame(width: 113, height: 113)
 
+                    // Chat button - fixed 113 wide
+                    if chatEnabled {
+                        Button {
+                            showingChat = true
+                        } label: {
+                            RetroButtonTablet(icon: "bubble.left.and.bubble.right.fill")
+                        }
+                        .frame(width: 113, height: 113)
+                    }
+
                     // Settings button - fixed 113 wide
                     Button {
                         showingSettings = true
@@ -303,6 +326,15 @@ struct HomeView: View {
                             showingPhonebook = true
                         } label: {
                             RetroButton(icon: "phone.fill", label: nil)
+                        }
+
+                        // Chat button
+                        if chatEnabled {
+                            Button {
+                                showingChat = true
+                            } label: {
+                                RetroButton(icon: "bubble.left.and.bubble.right.fill", label: nil)
+                            }
                         }
 
                         // Settings button
@@ -707,6 +739,13 @@ struct PhonebookView: View {
     @State private var draggedEntryId: UUID?
     @State private var previewSnapshotData: Data?
 
+    /// Top safe area inset so content starts below the iOS status bar / notch.
+    private var topSafeArea: CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first?.safeAreaInsets.top ?? 0
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Custom header matching main screen
@@ -719,6 +758,7 @@ struct PhonebookView: View {
                 connectionsList
             }
         }
+        .padding(.top, topSafeArea)
         .background(GridPatternView().ignoresSafeArea().allowsHitTesting(false))
         .background(Color.background.ignoresSafeArea())
         .fullScreenCover(isPresented: $showingAddSheet) {

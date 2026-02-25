@@ -161,9 +161,32 @@ void cterm_end(struct cterminal *cterm, int free_fonts) {
 }
 
 // Simple ANSI state machine for basic terminal emulation
-static int ansi_state = 0;  // 0=normal, 1=got ESC, 2=in CSI
+// States: 0=normal, 1=got ESC, 2=in CSI, 3=in OSC, 4=OSC got ESC (awaiting \)
+static int ansi_state = 0;
 static char ansi_params[64];
 static int ansi_param_len = 0;
+
+// OSC accumulation buffer (for OSC 800 / TAP and other OSC sequences)
+#define OSC_BUFFER_SIZE 4096
+static char osc_buffer[OSC_BUFFER_SIZE];
+static int osc_buffer_len = 0;
+
+// Forward declaration - implemented in syncterm_ios.c
+extern void ios_audio_command(const char *cmd, int len);
+
+// Dispatch completed OSC sequence
+static void dispatch_osc(void) {
+    if (osc_buffer_len <= 0) return;
+    osc_buffer[osc_buffer_len] = '\0';
+
+    // Check for OSC 800 (TAP audio command)
+    if (osc_buffer_len > 4 && strncmp(osc_buffer, "800;", 4) == 0) {
+        ios_audio_command(osc_buffer + 4, osc_buffer_len - 4);
+    }
+    // Other OSC sequences can be handled here in the future
+
+    osc_buffer_len = 0;
+}
 
 // Response buffer for ANSI queries (like cursor position report)
 static char ansi_response[64];
@@ -199,6 +222,7 @@ void cterm_reset_ansi_state(void) {
     underline_enabled = 0;
     saved_cursor_x = 1;
     saved_cursor_y = 1;
+    osc_buffer_len = 0;
 }
 
 static void process_ansi_sequence(void) {
@@ -488,6 +512,10 @@ size_t cterm_write(struct cterminal *cterm, const void *buf, int buflen,
                     ansi_state = 2;
                     ansi_param_len = 0;
                     memset(ansi_params, 0, sizeof(ansi_params));
+                } else if (c == ']') {
+                    // Start OSC sequence (ESC])
+                    ansi_state = 3;
+                    osc_buffer_len = 0;
                 } else {
                     ansi_state = 0;
                 }
@@ -514,6 +542,37 @@ size_t cterm_write(struct cterminal *cterm, const void *buf, int buflen,
                     // Invalid, reset
                     ansi_state = 0;
                 }
+                break;
+
+            case 3:  // In OSC sequence - accumulating characters
+                if (c == 0x07) {
+                    // BEL terminates OSC (xterm-style)
+                    dispatch_osc();
+                    ansi_state = 0;
+                } else if (c == 27) {
+                    // ESC - might be start of ST (ESC\)
+                    ansi_state = 4;
+                } else {
+                    // Accumulate character
+                    if (osc_buffer_len < OSC_BUFFER_SIZE - 1) {
+                        osc_buffer[osc_buffer_len++] = (char)c;
+                    } else {
+                        // Buffer overflow - abort OSC
+                        osc_buffer_len = 0;
+                        ansi_state = 0;
+                    }
+                }
+                break;
+
+            case 4:  // OSC got ESC - awaiting backslash for ST (ESC\)
+                if (c == '\\') {
+                    // ST complete - dispatch OSC
+                    dispatch_osc();
+                } else {
+                    // Not a valid ST - abort OSC
+                    osc_buffer_len = 0;
+                }
+                ansi_state = 0;
                 break;
         }
     }

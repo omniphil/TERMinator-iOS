@@ -245,7 +245,7 @@ class KeyboardInputView: UIView, UIKeyInput {
     }
 
     func deleteBackward() {
-        onCharacter?(Character(UnicodeScalar(127)))
+        onCharacter?(Character(UnicodeScalar(8)))
     }
 
     // MARK: - Hardware Keyboard Support
@@ -300,6 +300,9 @@ class KeyboardInputView: UIView, UIKeyInput {
         for press in presses {
             guard let key = press.key else { continue }
             switch key.keyCode {
+            case .keyboardDeleteOrBackspace:
+                onCharacter?(Character(UnicodeScalar(8)))
+                return
             case .keyboardDeleteForward:
                 onString?("\u{1B}[3~")
                 return
@@ -359,6 +362,7 @@ struct KeyboardInputRepresentable: UIViewRepresentable {
 /// Terminal view that renders the screen buffer using bitmap fonts for accurate CP437/Topaz rendering.
 struct TerminalView: View {
     @ObservedObject var viewModel: TerminalViewModel
+    var onTripleTap: (() -> Void)? = nil
 
     // Gesture state
     @State private var lastZoomLevel: CGFloat = 1.0
@@ -367,6 +371,24 @@ struct TerminalView: View {
 
     // Keyboard input state
     @State private var isKeyboardActive: Bool = false
+
+    // Selection drag handle state
+    enum DragHandle { case none, start, end }
+    @State private var activeDragHandle: DragHandle = .none
+
+    // Long-press detection state (timer-based, inside DragGesture)
+    @State private var longPressTimer: DispatchWorkItem?
+    @State private var longPressStartLocation: CGPoint = .zero
+    @State private var longPressTriggered: Bool = false
+    @State private var scrollPanStarted: Bool = false
+
+    // Triple-tap detection
+    @State private var tapCount: Int = 0
+    @State private var lastTapTime: Date = .distantPast
+    @State private var lastTapLocation: CGPoint = .zero
+    @State private var pendingKeyboardTask: DispatchWorkItem?
+    private let tripleTapTimeout: TimeInterval = 0.4
+    private let tripleTapRadius: CGFloat = 50
 
     // Cell dimensions (based on font - 8x16 for standard bitmap fonts)
     private let baseCellWidth: CGFloat = 8
@@ -401,6 +423,11 @@ struct TerminalView: View {
                 .simultaneousGesture(doubleTapGesture)
                 .simultaneousGesture(magnificationGesture)
                 .simultaneousGesture(dragGesture(in: geometry))
+                .overlay {
+                    if viewModel.isSelecting {
+                        selectionOverlay(in: geometry)
+                    }
+                }
 
                 // Logging indicator
                 if viewModel.isLogging {
@@ -438,25 +465,9 @@ struct TerminalView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     isKeyboardActive = true
                 }
-
-                // Start volume button observation for scrollback
-                VolumeButtonManager.shared.startObserving()
-            }
-            .onDisappear {
-                VolumeButtonManager.shared.stopObserving()
             }
             .onChange(of: geometry.size) { newSize in
                 viewModel.containerSize = newSize
-            }
-            .onReceive(VolumeButtonManager.shared.$scrollEvent) { direction in
-                guard let direction = direction else { return }
-                let scrollAmount = 3 // lines per press
-                switch direction {
-                case .up:
-                    viewModel.setScrollbackOffset(viewModel.scrollbackOffset + scrollAmount)
-                case .down:
-                    viewModel.setScrollbackOffset(viewModel.scrollbackOffset - scrollAmount)
-                }
             }
         }
     }
@@ -501,11 +512,14 @@ struct TerminalView: View {
 
                     let cell = viewModel.screenBuffer[index]
                     let charCode = Int(cell & 0xFF)
-                    // Extract colors from legacy attribute byte (bits 8-15) like Android does
-                    // attr byte format: bits 0-3 = fg (0-15), bits 4-6 = bg (0-7), bit 7 = blink
+                    // Use legacy_attr for colors (always reliably populated by native code)
                     let attr = Int((cell >> 8) & 0xFF)
-                    let fgIndex = attr & 0x0F
-                    let bgIndex = (attr >> 4) & 0x07  // Only 3 bits for background (0-7)
+                    let fgIndex = attr & 0x0F        // bits 0-3 (0-15)
+                    let bgIndex = (attr >> 4) & 0x07  // bits 4-6 (0-7)
+
+                    // Blink detection: bit 7 of legacy_attr
+                    let isBlink = (attr & 0x80) != 0
+                    let hideForeground = isBlink && !viewModel.blinkOn
 
                     let x = CGFloat(col) * cellWidth
                     let y = CGFloat(row) * cellHeight
@@ -516,56 +530,56 @@ struct TerminalView: View {
                     let bgColor = paletteColors[bgIndex]
                     ctx.fill(Path(rect), with: .color(bgColor))
 
-                    // Check if this cell is part of a URL
-                    let isURL = viewModel.urlAt(column: col, row: row) != nil
+                    // Draw foreground (skip during blink-off phase for blinking cells)
+                    if !hideForeground {
+                        // Check if this cell is part of a URL
+                        let isURL = viewModel.urlAt(column: col, row: row) != nil
 
-                    // Draw character using bitmap font at exact cell size
-                    if let glyphImage = viewModel.getGlyphImage(
-                        charCode: charCode,
-                        fgIndex: isURL ? 11 : fgIndex, // Cyan for URLs
-                        bgIndex: bgIndex,
-                        targetWidth: cellWidthInt,
-                        targetHeight: cellHeightInt
-                    ) {
-                        ctx.draw(
-                            Image(decorative: glyphImage, scale: 1.0, orientation: .up),
-                            in: rect
-                        )
+                        // Draw character using bitmap font at exact cell size
+                        if let glyphImage = viewModel.getGlyphImage(
+                            charCode: charCode,
+                            fgIndex: isURL ? 11 : fgIndex, // Cyan for URLs
+                            bgIndex: bgIndex,
+                            targetWidth: cellWidthInt,
+                            targetHeight: cellHeightInt
+                        ) {
+                            ctx.draw(
+                                Image(decorative: glyphImage, scale: 1.0, orientation: .up),
+                                in: rect
+                            )
 
-                        // Draw underline for URLs
-                        if isURL {
-                            let underlineY = y + cellHeight - 2
-                            let underlinePath = Path { path in
-                                path.move(to: CGPoint(x: x, y: underlineY))
-                                path.addLine(to: CGPoint(x: x + cellWidth, y: underlineY))
+                            // Draw underline for URLs
+                            if isURL {
+                                let underlineY = y + cellHeight - 2
+                                let underlinePath = Path { path in
+                                    path.move(to: CGPoint(x: x, y: underlineY))
+                                    path.addLine(to: CGPoint(x: x + cellWidth, y: underlineY))
+                                }
+                                ctx.stroke(underlinePath, with: .color(.cyan), lineWidth: 3)
                             }
-                            ctx.stroke(underlinePath, with: .color(.cyan), lineWidth: 3)
+                        } else if charCode != 32 {
+                            // Fallback: draw using system font if bitmap not available
+                            let fgColor = isURL ? Color.cyan : paletteColors[fgIndex]
+                            let displayChar = viewModel.mapCP437Char(charCode)
+                            let text = Text(String(displayChar))
+                                .font(.system(size: cellHeight * 0.8, design: .monospaced))
+                                .foregroundColor(fgColor)
+                            ctx.draw(text, at: CGPoint(x: x + cellWidth / 2, y: y + cellHeight / 2), anchor: .center)
                         }
-                    } else if charCode != 32 {
-                        // Fallback: draw using system font if bitmap not available
-                        let fgColor = isURL ? Color.cyan : paletteColors[fgIndex]
-                        let displayChar = viewModel.mapCP437Char(charCode)
-                        let text = Text(String(displayChar))
-                            .font(.system(size: cellHeight * 0.8, design: .monospaced))
-                            .foregroundColor(fgColor)
-                        ctx.draw(text, at: CGPoint(x: x + cellWidth / 2, y: y + cellHeight / 2), anchor: .center)
                     }
 
-                    // Draw underline if set (ESC[4m)
-                    if NativeBridge.isUnderline(cell) {
-                        let underlineY = y + cellHeight - (cellHeight * 0.1)
-                        let underlinePath = Path { path in
-                            path.move(to: CGPoint(x: x, y: underlineY))
-                            path.addLine(to: CGPoint(x: x + cellWidth, y: underlineY))
-                        }
-                        ctx.stroke(underlinePath, with: .color(paletteColors[fgIndex]), lineWidth: 3)
-                    }
-
-                    // Draw cursor
-                    if viewModel.cursorVisible && col == viewModel.cursorX && row == viewModel.cursorY {
-                        // Draw inverted cursor (light gray background, black text)
-                        let cursorRect = CGRect(x: x, y: y + cellHeight * 0.8, width: cellWidth, height: cellHeight * 0.2)
-                        ctx.fill(Path(cursorRect), with: .color(.white))
+                    // Draw cursor — SyncTERM style: bottom 2/16ths of cell,
+                    // foreground color, only visible when screen idle + blink on
+                    if !viewModel.userHideCursor && viewModel.cursorVisible &&
+                       viewModel.screenIsIdle && viewModel.cursorBlinkOn &&
+                       col == viewModel.cursorX && row == viewModel.cursorY {
+                        // SyncTERM _NORMALCURSOR: bottom 2 scanlines of 16px cell (12.5%)
+                        let cursorH = max(cellHeight * 2.0 / 16.0, 1.0)
+                        let cursorY = y + cellHeight - cursorH
+                        let cursorRect = CGRect(x: x, y: cursorY, width: cellWidth, height: cursorH)
+                        // Use the foreground color of the character at cursor position
+                        let cursorColor = fgIndex < paletteColors.count ? paletteColors[fgIndex] : .white
+                        ctx.fill(Path(cursorRect), with: .color(cursorColor))
                     }
                 }
             }
@@ -576,11 +590,129 @@ struct TerminalView: View {
         )
     }
 
+    // MARK: - Selection Helpers
+
+    /// Convert a screen point to terminal cell (col, row).
+    private func screenToCell(location: CGPoint, in geometry: GeometryProxy) -> (col: Int, row: Int) {
+        let fontW = viewModel.fontWidth > 0 ? CGFloat(viewModel.fontWidth) : baseCellWidth
+        let fontH = viewModel.fontHeight > 0 ? CGFloat(viewModel.fontHeight) : baseCellHeight
+        let terminalNativeWidth = CGFloat(viewModel.screenColumns) * fontW
+        let baseScale = geometry.size.width > 0 && terminalNativeWidth > 0
+            ? geometry.size.width / terminalNativeWidth : 1.0
+        let effectiveScale = baseScale * viewModel.zoomLevel
+        let relativeX = (location.x - viewModel.panOffset.width) / effectiveScale
+        let relativeY = (location.y - viewModel.panOffset.height) / effectiveScale
+        let col = max(0, min(Int(relativeX / fontW), viewModel.screenColumns - 1))
+        let row = max(0, min(Int(relativeY / fontH), viewModel.screenRows - 1))
+        return (col, row)
+    }
+
+    /// Calculate the pixel rect for the selection overlay.
+    private func selectionRect(in geometry: GeometryProxy) -> CGRect {
+        let fontW = viewModel.fontWidth > 0 ? CGFloat(viewModel.fontWidth) : baseCellWidth
+        let fontH = viewModel.fontHeight > 0 ? CGFloat(viewModel.fontHeight) : baseCellHeight
+        let terminalNativeWidth = CGFloat(viewModel.screenColumns) * fontW
+        let baseScale = geometry.size.width > 0 && terminalNativeWidth > 0
+            ? geometry.size.width / terminalNativeWidth : 1.0
+        let effectiveScale = baseScale * viewModel.zoomLevel
+
+        let x = CGFloat(viewModel.selectionMinCol) * fontW * effectiveScale + viewModel.panOffset.width
+        let y = CGFloat(viewModel.selectionMinRow) * fontH * effectiveScale + viewModel.panOffset.height
+        let w = CGFloat(viewModel.selectionMaxCol - viewModel.selectionMinCol + 1) * fontW * effectiveScale
+        let h = CGFloat(viewModel.selectionMaxRow - viewModel.selectionMinRow + 1) * fontH * effectiveScale
+        return CGRect(x: x, y: y, width: w, height: h)
+    }
+
+    /// Selection overlay with blue highlight and draggable lollipop handles.
+    private func selectionOverlay(in geometry: GeometryProxy) -> some View {
+        let rect = selectionRect(in: geometry)
+        let handleVisualRadius: CGFloat = 10
+        let handleTouchSize: CGFloat = 44
+        let stemLength: CGFloat = 14
+
+        return ZStack {
+            // Semi-transparent blue fill (no hit testing)
+            Rectangle()
+                .fill(Color.blue.opacity(0.25))
+                .frame(width: rect.width, height: rect.height)
+                .position(x: rect.midX, y: rect.midY)
+                .allowsHitTesting(false)
+
+            // Blue border (no hit testing)
+            Rectangle()
+                .stroke(Color.blue, lineWidth: 2)
+                .frame(width: rect.width, height: rect.height)
+                .position(x: rect.midX, y: rect.midY)
+                .allowsHitTesting(false)
+
+            // Top-left drag handle (lollipop pointing up-left)
+            ZStack {
+                // Stem line
+                Path { path in
+                    path.move(to: CGPoint(x: handleTouchSize / 2, y: handleTouchSize / 2))
+                    path.addLine(to: CGPoint(x: handleTouchSize / 2 - stemLength * 0.5, y: handleTouchSize / 2 - stemLength))
+                }
+                .stroke(Color.blue, lineWidth: 2)
+
+                // Circle at end of stem
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: handleVisualRadius * 2, height: handleVisualRadius * 2)
+                    .offset(x: -stemLength * 0.5, y: -stemLength)
+            }
+            .frame(width: handleTouchSize, height: handleTouchSize)
+            .contentShape(Rectangle())
+            .position(x: rect.minX, y: rect.minY)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        activeDragHandle = .start
+                        let cell = screenToCell(location: value.location, in: geometry)
+                        viewModel.updateSelectionAnchor(col: cell.col, row: cell.row)
+                    }
+                    .onEnded { _ in
+                        activeDragHandle = .none
+                    }
+            )
+
+            // Bottom-right drag handle (lollipop pointing down-right)
+            ZStack {
+                // Stem line
+                Path { path in
+                    path.move(to: CGPoint(x: handleTouchSize / 2, y: handleTouchSize / 2))
+                    path.addLine(to: CGPoint(x: handleTouchSize / 2 + stemLength * 0.5, y: handleTouchSize / 2 + stemLength))
+                }
+                .stroke(Color.blue, lineWidth: 2)
+
+                // Circle at end of stem
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: handleVisualRadius * 2, height: handleVisualRadius * 2)
+                    .offset(x: stemLength * 0.5, y: stemLength)
+            }
+            .frame(width: handleTouchSize, height: handleTouchSize)
+            .contentShape(Rectangle())
+            .position(x: rect.maxX, y: rect.maxY)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        activeDragHandle = .end
+                        let cell = screenToCell(location: value.location, in: geometry)
+                        viewModel.updateSelection(col: cell.col, row: cell.row)
+                    }
+                    .onEnded { _ in
+                        activeDragHandle = .none
+                    }
+            )
+        }
+    }
+
     // MARK: - Gestures
 
     private var magnificationGesture: some Gesture {
         MagnificationGesture()
             .onChanged { value in
+                if viewModel.isSelecting { viewModel.cancelSelection() }
                 // Apply zoom continuously during pinch for live feedback
                 let newZoom = lastZoomLevel * value
                 viewModel.setZoom(newZoom)
@@ -594,34 +726,74 @@ struct TerminalView: View {
     }
 
     private func dragGesture(in geometry: GeometryProxy) -> some Gesture {
-        DragGesture()
+        DragGesture(minimumDistance: 0)
             .onChanged { value in
-                if viewModel.zoomLevel <= 1.0 {
-                    // Scrollback mode: vertical drag scrolls through history
-                    if value.translation == .zero || (abs(value.translation.width) < 1 && abs(value.translation.height) < 1) {
-                        scrollbackStartOffset = viewModel.scrollbackOffset
+                // If a handle drag is active, skip normal gesture processing
+                if activeDragHandle != .none { return }
+
+                let dist = hypot(value.translation.width, value.translation.height)
+
+                // --- First touch (translation near zero): start long-press timer ---
+                if !longPressTriggered && !scrollPanStarted && longPressTimer == nil {
+                    longPressStartLocation = value.startLocation
+                    scrollbackStartOffset = viewModel.scrollbackOffset
+                    dragStartOffset = viewModel.panOffset
+                    let timer = DispatchWorkItem { [self] in
+                        // Timer fired → trigger selection
+                        longPressTriggered = true
+                        let cell = screenToCell(location: value.startLocation, in: geometry)
+                        viewModel.startSelection(col: cell.col, row: cell.row)
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     }
-                    let fontHeight = viewModel.fontHeight > 0 ? CGFloat(viewModel.fontHeight) : baseCellHeight
-                    let terminalNativeWidth = CGFloat(viewModel.screenColumns) * (viewModel.fontWidth > 0 ? CGFloat(viewModel.fontWidth) : baseCellWidth)
-                    let baseScale = geometry.size.width > 0 && terminalNativeWidth > 0
-                        ? geometry.size.width / terminalNativeWidth : 1.0
-                    let cellScreenHeight = fontHeight * baseScale
-                    // Drag down (positive translation) = scroll back (increase offset)
-                    let lineDelta = Int(value.translation.height / cellScreenHeight)
-                    viewModel.setScrollbackOffset(scrollbackStartOffset + lineDelta)
-                } else {
-                    // Pan mode: drag to pan zoomed content
-                    if value.translation == .zero || (abs(value.translation.width) < 1 && abs(value.translation.height) < 1) {
-                        dragStartOffset = viewModel.panOffset
+                    longPressTimer = timer
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: timer)
+                    return
+                }
+
+                // --- Finger moved >10pt before timer fired → cancel timer, enter scroll/pan ---
+                if !longPressTriggered && !scrollPanStarted && dist > 10 {
+                    longPressTimer?.cancel()
+                    longPressTimer = nil
+                    scrollPanStarted = true
+                    // Cancel any active selection from a previous gesture
+                    if viewModel.isSelecting { viewModel.cancelSelection() }
+                }
+
+                // --- Selection mode: extend selection as finger drags ---
+                if longPressTriggered {
+                    let cell = screenToCell(location: value.location, in: geometry)
+                    viewModel.updateSelection(col: cell.col, row: cell.row)
+                    return
+                }
+
+                // --- Scroll / Pan mode ---
+                if scrollPanStarted {
+                    if viewModel.zoomLevel <= 1.0 {
+                        let fontHeight = viewModel.fontHeight > 0 ? CGFloat(viewModel.fontHeight) : baseCellHeight
+                        let terminalNativeWidth = CGFloat(viewModel.screenColumns) * (viewModel.fontWidth > 0 ? CGFloat(viewModel.fontWidth) : baseCellWidth)
+                        let baseScale = geometry.size.width > 0 && terminalNativeWidth > 0
+                            ? geometry.size.width / terminalNativeWidth : 1.0
+                        let cellScreenHeight = fontHeight * baseScale
+                        let lineDelta = Int(value.translation.height / cellScreenHeight)
+                        viewModel.setScrollbackOffset(scrollbackStartOffset + lineDelta)
+                    } else {
+                        let newOffset = CGSize(
+                            width: dragStartOffset.width + value.translation.width,
+                            height: dragStartOffset.height + value.translation.height
+                        )
+                        viewModel.updatePan(newOffset)
                     }
-                    let newOffset = CGSize(
-                        width: dragStartOffset.width + value.translation.width,
-                        height: dragStartOffset.height + value.translation.height
-                    )
-                    viewModel.updatePan(newOffset)
                 }
             }
             .onEnded { _ in
+                // Clean up timer
+                longPressTimer?.cancel()
+                longPressTimer = nil
+
+                // Reset state for next gesture
+                longPressTriggered = false
+                scrollPanStarted = false
+
                 if viewModel.zoomLevel <= 1.0 {
                     scrollbackStartOffset = viewModel.scrollbackOffset
                 } else {
@@ -651,39 +823,61 @@ struct TerminalView: View {
     // MARK: - Tap Handling
 
     private func handleTap(at location: CGPoint, in geometry: GeometryProxy) {
-        let fontWidth = viewModel.fontWidth > 0 ? CGFloat(viewModel.fontWidth) : baseCellWidth
-        let fontHeight = viewModel.fontHeight > 0 ? CGFloat(viewModel.fontHeight) : baseCellHeight
+        // Cancel any pending keyboard show
+        pendingKeyboardTask?.cancel()
+        pendingKeyboardTask = nil
 
-        // Calculate base scale so that 100% zoom fills the available width
-        let terminalNativeWidth = CGFloat(viewModel.screenColumns) * fontWidth
-        let baseScale = geometry.size.width > 0 && terminalNativeWidth > 0
-            ? geometry.size.width / terminalNativeWidth
-            : 1.0
-        let effectiveScale = baseScale * viewModel.zoomLevel
-
-        // Left-justified (topLeading anchor), so canvasOriginX is 0 + pan offset
-        let canvasOriginX = viewModel.panOffset.width
-        let canvasOriginY = viewModel.panOffset.height
-
-        let relativeX = (location.x - canvasOriginX) / effectiveScale
-        let relativeY = (location.y - canvasOriginY) / effectiveScale
-
-        let col = Int(relativeX / fontWidth)
-        let row = Int(relativeY / fontHeight)
-
-        guard col >= 0 && col < viewModel.screenColumns &&
-              row >= 0 && row < viewModel.screenRows else {
-            // Tapped outside terminal area - still show keyboard
-            isKeyboardActive = true
+        // If selecting, tap cancels the selection
+        if viewModel.isSelecting {
+            viewModel.cancelSelection()
+            tapCount = 0
             return
         }
 
-        if let url = viewModel.urlAt(column: col, row: row) {
-            viewModel.openURL(url)
+        // Check for URL tap first
+        let cell = screenToCell(location: location, in: geometry)
+        if cell.col >= 0 && cell.col < viewModel.screenColumns &&
+           cell.row >= 0 && cell.row < viewModel.screenRows {
+            if let url = viewModel.urlAt(column: cell.col, row: cell.row) {
+                viewModel.openURL(url)
+                tapCount = 0
+                return
+            }
+        }
+
+        // Triple-tap detection
+        let now = Date()
+        let timeSinceLastTap = now.timeIntervalSince(lastTapTime)
+        let dx = location.x - lastTapLocation.x
+        let dy = location.y - lastTapLocation.y
+        let dist = sqrt(dx * dx + dy * dy)
+
+        if timeSinceLastTap < tripleTapTimeout && dist < tripleTapRadius {
+            tapCount += 1
         } else {
-            // No URL tapped - show keyboard
+            tapCount = 1
+        }
+
+        lastTapTime = now
+        lastTapLocation = location
+
+        if tapCount >= 3 {
+            tapCount = 0
+            onTripleTap?()
+            return
+        }
+
+        // Suppress keyboard on tap 2 (let double-tap zoom reset handle it)
+        if tapCount == 2 {
+            return
+        }
+
+        // Delayed keyboard show (cancelled if more taps come)
+        let task = DispatchWorkItem {
             isKeyboardActive = true
         }
+        pendingKeyboardTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + tripleTapTimeout, execute: task)
     }
 
     // MARK: - Overlays

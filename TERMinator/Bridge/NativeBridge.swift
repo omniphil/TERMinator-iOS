@@ -166,6 +166,11 @@ final class NativeBridge {
         return native_is_cursor_visible()
     }
 
+    /// Check if BBS explicitly changed cursor type (read and clear).
+    func cursorTypeChanged() -> Bool {
+        return native_cursor_type_changed()
+    }
+
     /// Check if the screen has changed since last render.
     func isScreenDirty() -> Bool {
         return native_is_screen_dirty()
@@ -431,6 +436,47 @@ final class NativeBridge {
         return native_check_bell()
     }
 
+    // MARK: - Audio Command (OSC 800 / TAP)
+
+    /// Check if an audio command is pending.
+    func checkAudioCommand() -> Bool {
+        return native_check_audio_command()
+    }
+
+    /// Get the pending audio command string and clear the flag.
+    func getAudioCommand() -> String? {
+        guard let cStr = native_get_audio_command() else { return nil }
+        return String(cString: cStr)
+    }
+
+    // MARK: - MOD Player (libxmp)
+
+    /// Load a tracker module file.
+    func modLoad(_ filePath: String) -> Bool {
+        return native_mod_load(filePath)
+    }
+
+    /// Render PCM frames from the loaded module.
+    /// Returns frames rendered, or -1 on end/error.
+    func modGetPcm(_ buffer: UnsafeMutablePointer<Int16>, frames: Int) -> Int {
+        return Int(native_mod_get_pcm(buffer, Int32(frames)))
+    }
+
+    /// Stop and release the current module.
+    func modStop() {
+        native_mod_stop()
+    }
+
+    /// Set MOD playback volume (0.0 - 1.0).
+    func modSetVolume(_ volume: Float) {
+        native_mod_set_volume(volume)
+    }
+
+    /// Check if a module is currently playing.
+    func modIsPlaying() -> Bool {
+        return native_mod_is_playing()
+    }
+
     // MARK: - Session Logging
 
     /// Enable or disable session logging.
@@ -528,6 +574,9 @@ private func native_get_cursor_pos(_ x: UnsafeMutablePointer<Int32>, _ y: Unsafe
 
 @_silgen_name("native_is_cursor_visible")
 private func native_is_cursor_visible() -> Bool
+
+@_silgen_name("native_cursor_type_changed")
+private func native_cursor_type_changed() -> Bool
 
 @_silgen_name("native_is_screen_dirty")
 private func native_is_screen_dirty() -> Bool
@@ -647,3 +696,26 @@ private func native_set_logging_enabled(_ enabled: Bool)
 
 @_silgen_name("native_get_logged_data")
 private func native_get_logged_data(_ count: UnsafeMutablePointer<Int32>) -> UnsafePointer<UInt8>?
+
+// Audio Command (OSC 800 / TAP)
+@_silgen_name("native_check_audio_command")
+private func native_check_audio_command() -> Bool
+
+@_silgen_name("native_get_audio_command")
+private func native_get_audio_command() -> UnsafePointer<CChar>?
+
+// MOD Player (libxmp)
+@_silgen_name("native_mod_load")
+private func native_mod_load(_ filePath: UnsafePointer<CChar>) -> Bool
+
+@_silgen_name("native_mod_get_pcm")
+private func native_mod_get_pcm(_ buffer: UnsafeMutablePointer<Int16>, _ frames: Int32) -> Int32
+
+@_silgen_name("native_mod_stop")
+private func native_mod_stop()
+
+@_silgen_name("native_mod_set_volume")
+private func native_mod_set_volume(_ volume: Float)
+
+@_silgen_name("native_mod_is_playing")
+private func native_mod_is_playing() -> Bool

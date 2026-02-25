@@ -2,7 +2,7 @@ import MetalKit
 import UIKit
 
 /// Metal-based terminal renderer with guaranteed nearest-neighbor scaling.
-/// Renders terminal at native resolution (640x400) then GPU-scales to screen.
+/// Renders terminal at native resolution (cols*fontW x rows*fontH) then GPU-scales to screen.
 final class TerminalMetalView: MTKView, MTKViewDelegate {
     weak var terminalViewModel: TerminalViewModel?
     var onReady: (() -> Void)?
@@ -11,9 +11,9 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
     private var pipelineState: MTLRenderPipelineState?
     private var terminalTexture: MTLTexture?
 
-    // Terminal dimensions
-    private let nativeWidth = 640   // 80 columns * 8 pixels
-    private let nativeHeight = 400  // 25 rows * 16 pixels
+    // Dynamic terminal dimensions (updated from viewModel each frame)
+    private var currentWidth = 640   // screenColumns * fontWidth
+    private var currentHeight = 400  // screenRows * fontHeight
 
     private var didNotifyReady = false
 
@@ -133,8 +133,8 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
 
         let textureDescriptor = MTLTextureDescriptor()
         textureDescriptor.pixelFormat = .bgra8Unorm
-        textureDescriptor.width = nativeWidth
-        textureDescriptor.height = nativeHeight
+        textureDescriptor.width = currentWidth
+        textureDescriptor.height = currentHeight
         textureDescriptor.usage = [.shaderRead, .shaderWrite]
         textureDescriptor.storageMode = .shared
 
@@ -147,7 +147,6 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
 
     func draw(in view: MTKView) {
         guard let viewModel = terminalViewModel,
-              let texture = terminalTexture,
               let pipelineState = pipelineState,
               let commandQueue = commandQueue,
               let drawable = currentDrawable,
@@ -160,19 +159,37 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
             }
         }
 
+        // Update texture dimensions from viewModel when screen size or font changes
+        let fontW = viewModel.fontWidth > 0 ? viewModel.fontWidth : 8
+        let fontH = viewModel.fontHeight > 0 ? viewModel.fontHeight : 16
+        let cols = viewModel.screenColumns > 0 ? viewModel.screenColumns : 80
+        let rows = viewModel.screenRows > 0 ? viewModel.screenRows : 25
+        let neededWidth = cols * fontW
+        let neededHeight = rows * fontH
+
+        if neededWidth != currentWidth || neededHeight != currentHeight {
+            currentWidth = neededWidth
+            currentHeight = neededHeight
+            createTerminalTexture()
+            pixelBuffer = []  // Force reallocation at new size
+            lastRenderedVersion = -1  // Force re-render
+        }
+
+        guard let texture = terminalTexture else { return }
+
         // Re-render terminal content to texture when display buffer has changed
         let currentVersion = viewModel.displayBufferVersion
         if currentVersion != lastRenderedVersion {
             if viewModel.displayBuffer.isEmpty {
                 // Buffer was cleared (e.g. between connections) — black out the texture
-                let pixelCount = nativeWidth * nativeHeight
+                let pixelCount = currentWidth * currentHeight
                 if pixelBuffer.count == pixelCount {
                     _ = pixelBuffer.withUnsafeMutableBytes { $0.initializeMemory(as: UInt32.self, repeating: 0xFF000000) }
                     let region = MTLRegion(origin: MTLOrigin(x: 0, y: 0, z: 0),
-                                           size: MTLSize(width: nativeWidth, height: nativeHeight, depth: 1))
+                                           size: MTLSize(width: currentWidth, height: currentHeight, depth: 1))
                     pixelBuffer.withUnsafeBytes { ptr in
                         guard let base = ptr.baseAddress else { return }
-                        texture.replace(region: region, mipmapLevel: 0, withBytes: base, bytesPerRow: nativeWidth * 4)
+                        texture.replace(region: region, mipmapLevel: 0, withBytes: base, bytesPerRow: currentWidth * 4)
                     }
                 }
             } else {
@@ -190,8 +207,8 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
         // Aspect-fit scaling: fill width, preserve aspect ratio
         let drawableW = Float(drawable.texture.width)
         let drawableH = Float(drawable.texture.height)
-        let textureW = Float(nativeWidth)
-        let textureH = Float(nativeHeight)
+        let textureW = Float(currentWidth)
+        let textureH = Float(currentHeight)
 
         let scale = min(drawableW / textureW, drawableH / textureH)
         let scaledW = textureW * scale
@@ -235,7 +252,7 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
         let fontHeight = viewModel.fontHeight > 0 ? viewModel.fontHeight : 16
         let bytesPerRow = (fontWidth + 7) / 8
 
-        let pixelCount = nativeWidth * nativeHeight
+        let pixelCount = currentWidth * currentHeight
 
         // Reuse pixel buffer - only reallocate if size changed
         if pixelBuffer.count != pixelCount {
@@ -250,16 +267,22 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
         fontBitmap.withUnsafeBytes { (fontPtr: UnsafeRawBufferPointer) in
             guard let fontBase = fontPtr.baseAddress else { return }
 
-            for row in 0..<min(rows, nativeHeight / fontHeight) {
-                for col in 0..<min(columns, nativeWidth / fontWidth) {
+            for row in 0..<min(rows, currentHeight / fontHeight) {
+                for col in 0..<min(columns, currentWidth / fontWidth) {
                     let index = row * columns + col
                     guard index < viewModel.displayBuffer.count else { continue }
 
                     let cell = viewModel.displayBuffer[index]
                     let cellUnsigned = UInt32(bitPattern: cell)
                     let charCode = Int(cellUnsigned & 0xFF)
-                    let fgIndex = Int((cellUnsigned >> 16) & 0x0F)
-                    let bgIndex = Int((cellUnsigned >> 24) & 0x0F)
+                    let attr = Int((cellUnsigned >> 8) & 0xFF)
+                    // Use legacy_attr for colors (always reliably populated by native code)
+                    let fgIndex = attr & 0x0F        // bits 0-3 (0-15)
+                    let bgIndex = (attr >> 4) & 0x07  // bits 4-6 (0-7)
+
+                    // Blink detection: bit 7 of legacy_attr
+                    let isBlink = (attr & 0x80) != 0
+                    let hideForeground = isBlink && !viewModel.blinkOn
 
                     let fgColor = colorBGRA(fgIndex, palette: customPalette)
                     let bgColor = colorBGRA(bgIndex, palette: customPalette)
@@ -276,13 +299,13 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
                             fontBase.load(fromByteOffset: rowOffset + 1, as: UInt8.self) : 0
 
                         let destY = cellStartY + srcY
-                        guard destY < nativeHeight else { continue }
-                        let pixelRowStart = destY * nativeWidth
-                        guard pixelRowStart + nativeWidth <= pixelBuffer.count else { continue }
+                        guard destY < currentHeight else { continue }
+                        let pixelRowStart = destY * currentWidth
+                        guard pixelRowStart + currentWidth <= pixelBuffer.count else { continue }
 
                         for srcX in 0..<fontWidth {
                             let destX = cellStartX + srcX
-                            guard destX < nativeWidth else { continue }
+                            guard destX < currentWidth else { continue }
 
                             let isSet: Bool
                             if srcX < 8 {
@@ -291,7 +314,7 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
                                 isSet = ((Int(rowByte1) >> (15 - srcX)) & 1) == 1
                             }
 
-                            pixelBuffer[pixelRowStart + destX] = isSet ? fgColor : bgColor
+                            pixelBuffer[pixelRowStart + destX] = (isSet && !hideForeground) ? fgColor : bgColor
                         }
                     }
                 }
@@ -300,10 +323,10 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
 
         // Upload pixel buffer to texture
         let region = MTLRegion(origin: MTLOrigin(x: 0, y: 0, z: 0),
-                               size: MTLSize(width: nativeWidth, height: nativeHeight, depth: 1))
+                               size: MTLSize(width: currentWidth, height: currentHeight, depth: 1))
         pixelBuffer.withUnsafeBytes { ptr in
             guard let base = ptr.baseAddress else { return }
-            texture.replace(region: region, mipmapLevel: 0, withBytes: base, bytesPerRow: nativeWidth * 4)
+            texture.replace(region: region, mipmapLevel: 0, withBytes: base, bytesPerRow: currentWidth * 4)
         }
 
     }

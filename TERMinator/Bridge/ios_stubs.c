@@ -324,14 +324,20 @@ int telnets_close(void) {
 // Terminal Function Stubs
 // ============================================================================
 
-void get_cterm_size(int *width, int *height) {
-    if (width) *width = 80;
-    if (height) *height = 25;
+extern int g_term_width;
+extern int g_term_height;
+
+void get_cterm_size(int *cols, int *rows, int ns) {
+    if (cols) *cols = g_term_width;
+    if (rows) *rows = g_term_height;
 }
 
-void get_term_win_size(int *width, int *height) {
-    if (width) *width = 80;
-    if (height) *height = 25;
+void get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostatus) {
+    if (width) *width = g_term_width;
+    if (height) *height = g_term_height;
+    if (pixelw) *pixelw = 0;
+    if (pixelh) *pixelh = 0;
+    if (nostatus) *nostatus = 1;
 }
 
 // ============================================================================

@@ -27,6 +27,8 @@
 		AA000005009 /* ImportExportManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005008 /* ImportExportManager.swift */; };
 		AA000005011 /* OrientationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005010 /* OrientationManager.swift */; };
 		AA000005013 /* VolumeButtonManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005012 /* VolumeButtonManager.swift */; };
+		AA000005021 /* SoundtrackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005020 /* SoundtrackManager.swift */; };
+		AA000005023 /* ModPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005022 /* ModPlayer.swift */; };
 		AA000006001 /* NativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000006000 /* NativeBridge.swift */; };
 		AA000006003 /* syncterm_ios.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006002 /* syncterm_ios.c */; };
 		AA000006005 /* ios_ciolib.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006004 /* ios_ciolib.c */; };
@@ -77,6 +79,169 @@
 		AA000008024 /* snapshot_wizardsrainbow.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008025 /* snapshot_wizardsrainbow.png */; };
 		AA000008026 /* snapshot_xibalba.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008027 /* snapshot_xibalba.png */; };
 		AA000008028 /* snapshot_distortion.png in Resources */ = {isa = PBXBuildFile; fileRef = AA000008029 /* snapshot_distortion.png */; };
+		BB000000002 /* modplayer_ios.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000001 /* modplayer_ios.c */; };
+		BB000000004 /* libxmp/control.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000003 /* libxmp/control.c */; };
+		BB000000006 /* libxmp/dataio.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000005 /* libxmp/dataio.c */; };
+		BB000000008 /* libxmp/depackers/arc.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000007 /* libxmp/depackers/arc.c */; };
+		BB000000010 /* libxmp/depackers/arc_unpack.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000009 /* libxmp/depackers/arc_unpack.c */; };
+		BB000000012 /* libxmp/depackers/arcfs.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000011 /* libxmp/depackers/arcfs.c */; };
+		BB000000014 /* libxmp/depackers/bunzip2.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000013 /* libxmp/depackers/bunzip2.c */; };
+		BB000000016 /* libxmp/depackers/crc32.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000015 /* libxmp/depackers/crc32.c */; };
+		BB000000018 /* libxmp/depackers/depacker.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000017 /* libxmp/depackers/depacker.c */; };
+		BB000000020 /* libxmp/depackers/gunzip.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000019 /* libxmp/depackers/gunzip.c */; };
+		BB000000022 /* libxmp/depackers/lzx.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000021 /* libxmp/depackers/lzx.c */; };
+		BB000000024 /* libxmp/depackers/lzx_unpack.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000023 /* libxmp/depackers/lzx_unpack.c */; };
+		BB000000026 /* libxmp/depackers/miniz_zip.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000025 /* libxmp/depackers/miniz_zip.c */; };
+		BB000000028 /* libxmp/depackers/mmcmp.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000027 /* libxmp/depackers/mmcmp.c */; };
+		BB000000030 /* libxmp/depackers/ppdepack.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000029 /* libxmp/depackers/ppdepack.c */; };
+		BB000000032 /* libxmp/depackers/ptpopen.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000031 /* libxmp/depackers/ptpopen.c */; };
+		BB000000034 /* libxmp/depackers/s404_dec.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000033 /* libxmp/depackers/s404_dec.c */; };
+		BB000000036 /* libxmp/depackers/uncompress.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000035 /* libxmp/depackers/uncompress.c */; };
+		BB000000038 /* libxmp/depackers/unlha.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000037 /* libxmp/depackers/unlha.c */; };
+		BB000000040 /* libxmp/depackers/unsqsh.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000039 /* libxmp/depackers/unsqsh.c */; };
+		BB000000042 /* libxmp/depackers/unxz.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000041 /* libxmp/depackers/unxz.c */; };
+		BB000000044 /* libxmp/depackers/unzip.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000043 /* libxmp/depackers/unzip.c */; };
+		BB000000046 /* libxmp/depackers/xfd.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000045 /* libxmp/depackers/xfd.c */; };
+		BB000000048 /* libxmp/depackers/xfd_link.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000047 /* libxmp/depackers/xfd_link.c */; };
+		BB000000050 /* libxmp/depackers/xfnmatch.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000049 /* libxmp/depackers/xfnmatch.c */; };
+		BB000000052 /* libxmp/depackers/xz_dec_lzma2.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000051 /* libxmp/depackers/xz_dec_lzma2.c */; };
+		BB000000054 /* libxmp/depackers/xz_dec_stream.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000053 /* libxmp/depackers/xz_dec_stream.c */; };
+		BB000000056 /* libxmp/effects.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000055 /* libxmp/effects.c */; };
+		BB000000058 /* libxmp/extras.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000057 /* libxmp/extras.c */; };
+		BB000000060 /* libxmp/far_extras.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000059 /* libxmp/far_extras.c */; };
+		BB000000062 /* libxmp/filetype.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000061 /* libxmp/filetype.c */; };
+		BB000000064 /* libxmp/filter.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000063 /* libxmp/filter.c */; };
+		BB000000066 /* libxmp/format.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000065 /* libxmp/format.c */; };
+		BB000000068 /* libxmp/hio.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000067 /* libxmp/hio.c */; };
+		BB000000070 /* libxmp/hmn_extras.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000069 /* libxmp/hmn_extras.c */; };
+		BB000000072 /* libxmp/lfo.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000071 /* libxmp/lfo.c */; };
+		BB000000074 /* libxmp/load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000073 /* libxmp/load.c */; };
+		BB000000076 /* libxmp/load_helpers.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000075 /* libxmp/load_helpers.c */; };
+		BB000000078 /* libxmp/loaders/669_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000077 /* libxmp/loaders/669_load.c */; };
+		BB000000080 /* libxmp/loaders/abk_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000079 /* libxmp/loaders/abk_load.c */; };
+		BB000000082 /* libxmp/loaders/amf_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000081 /* libxmp/loaders/amf_load.c */; };
+		BB000000084 /* libxmp/loaders/arch_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000083 /* libxmp/loaders/arch_load.c */; };
+		BB000000086 /* libxmp/loaders/asylum_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000085 /* libxmp/loaders/asylum_load.c */; };
+		BB000000088 /* libxmp/loaders/chip_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000087 /* libxmp/loaders/chip_load.c */; };
+		BB000000090 /* libxmp/loaders/coco_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000089 /* libxmp/loaders/coco_load.c */; };
+		BB000000092 /* libxmp/loaders/common.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000091 /* libxmp/loaders/common.c */; };
+		BB000000094 /* libxmp/loaders/dbm_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000093 /* libxmp/loaders/dbm_load.c */; };
+		BB000000096 /* libxmp/loaders/digi_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000095 /* libxmp/loaders/digi_load.c */; };
+		BB000000098 /* libxmp/loaders/dt_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000097 /* libxmp/loaders/dt_load.c */; };
+		BB000000100 /* libxmp/loaders/emod_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000099 /* libxmp/loaders/emod_load.c */; };
+		BB000000102 /* libxmp/loaders/far_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000101 /* libxmp/loaders/far_load.c */; };
+		BB000000104 /* libxmp/loaders/flt_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000103 /* libxmp/loaders/flt_load.c */; };
+		BB000000106 /* libxmp/loaders/fnk_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000105 /* libxmp/loaders/fnk_load.c */; };
+		BB000000108 /* libxmp/loaders/gal4_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000107 /* libxmp/loaders/gal4_load.c */; };
+		BB000000110 /* libxmp/loaders/gal5_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000109 /* libxmp/loaders/gal5_load.c */; };
+		BB000000112 /* libxmp/loaders/gdm_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000111 /* libxmp/loaders/gdm_load.c */; };
+		BB000000114 /* libxmp/loaders/hmn_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000113 /* libxmp/loaders/hmn_load.c */; };
+		BB000000116 /* libxmp/loaders/ice_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000115 /* libxmp/loaders/ice_load.c */; };
+		BB000000118 /* libxmp/loaders/iff.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000117 /* libxmp/loaders/iff.c */; };
+		BB000000120 /* libxmp/loaders/imf_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000119 /* libxmp/loaders/imf_load.c */; };
+		BB000000122 /* libxmp/loaders/ims_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000121 /* libxmp/loaders/ims_load.c */; };
+		BB000000124 /* libxmp/loaders/it_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000123 /* libxmp/loaders/it_load.c */; };
+		BB000000126 /* libxmp/loaders/itsex.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000125 /* libxmp/loaders/itsex.c */; };
+		BB000000128 /* libxmp/loaders/liq_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000127 /* libxmp/loaders/liq_load.c */; };
+		BB000000130 /* libxmp/loaders/lzw.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000129 /* libxmp/loaders/lzw.c */; };
+		BB000000132 /* libxmp/loaders/masi16_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000131 /* libxmp/loaders/masi16_load.c */; };
+		BB000000134 /* libxmp/loaders/masi_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000133 /* libxmp/loaders/masi_load.c */; };
+		BB000000136 /* libxmp/loaders/mdl_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000135 /* libxmp/loaders/mdl_load.c */; };
+		BB000000138 /* libxmp/loaders/med2_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000137 /* libxmp/loaders/med2_load.c */; };
+		BB000000140 /* libxmp/loaders/med3_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000139 /* libxmp/loaders/med3_load.c */; };
+		BB000000142 /* libxmp/loaders/med4_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000141 /* libxmp/loaders/med4_load.c */; };
+		BB000000144 /* libxmp/loaders/mfp_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000143 /* libxmp/loaders/mfp_load.c */; };
+		BB000000146 /* libxmp/loaders/mgt_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000145 /* libxmp/loaders/mgt_load.c */; };
+		BB000000148 /* libxmp/loaders/mmd1_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000147 /* libxmp/loaders/mmd1_load.c */; };
+		BB000000150 /* libxmp/loaders/mmd3_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000149 /* libxmp/loaders/mmd3_load.c */; };
+		BB000000152 /* libxmp/loaders/mmd_common.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000151 /* libxmp/loaders/mmd_common.c */; };
+		BB000000154 /* libxmp/loaders/mod_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000153 /* libxmp/loaders/mod_load.c */; };
+		BB000000156 /* libxmp/loaders/mtm_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000155 /* libxmp/loaders/mtm_load.c */; };
+		BB000000158 /* libxmp/loaders/muse_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000157 /* libxmp/loaders/muse_load.c */; };
+		BB000000160 /* libxmp/loaders/no_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000159 /* libxmp/loaders/no_load.c */; };
+		BB000000162 /* libxmp/loaders/okt_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000161 /* libxmp/loaders/okt_load.c */; };
+		BB000000164 /* libxmp/loaders/prowizard/ac1d.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000163 /* libxmp/loaders/prowizard/ac1d.c */; };
+		BB000000166 /* libxmp/loaders/prowizard/di.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000165 /* libxmp/loaders/prowizard/di.c */; };
+		BB000000168 /* libxmp/loaders/prowizard/eureka.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000167 /* libxmp/loaders/prowizard/eureka.c */; };
+		BB000000170 /* libxmp/loaders/prowizard/fc-m.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000169 /* libxmp/loaders/prowizard/fc-m.c */; };
+		BB000000172 /* libxmp/loaders/prowizard/fuchs.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000171 /* libxmp/loaders/prowizard/fuchs.c */; };
+		BB000000174 /* libxmp/loaders/prowizard/fuzzac.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000173 /* libxmp/loaders/prowizard/fuzzac.c */; };
+		BB000000176 /* libxmp/loaders/prowizard/gmc.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000175 /* libxmp/loaders/prowizard/gmc.c */; };
+		BB000000178 /* libxmp/loaders/prowizard/heatseek.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000177 /* libxmp/loaders/prowizard/heatseek.c */; };
+		BB000000180 /* libxmp/loaders/prowizard/hrt.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000179 /* libxmp/loaders/prowizard/hrt.c */; };
+		BB000000182 /* libxmp/loaders/prowizard/ksm.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000181 /* libxmp/loaders/prowizard/ksm.c */; };
+		BB000000184 /* libxmp/loaders/prowizard/mp.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000183 /* libxmp/loaders/prowizard/mp.c */; };
+		BB000000186 /* libxmp/loaders/prowizard/noiserun.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000185 /* libxmp/loaders/prowizard/noiserun.c */; };
+		BB000000188 /* libxmp/loaders/prowizard/novotrade.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000187 /* libxmp/loaders/prowizard/novotrade.c */; };
+		BB000000190 /* libxmp/loaders/prowizard/np1.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000189 /* libxmp/loaders/prowizard/np1.c */; };
+		BB000000192 /* libxmp/loaders/prowizard/np2.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000191 /* libxmp/loaders/prowizard/np2.c */; };
+		BB000000194 /* libxmp/loaders/prowizard/np3.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000193 /* libxmp/loaders/prowizard/np3.c */; };
+		BB000000196 /* libxmp/loaders/prowizard/p40.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000195 /* libxmp/loaders/prowizard/p40.c */; };
+		BB000000198 /* libxmp/loaders/prowizard/p61a.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000197 /* libxmp/loaders/prowizard/p61a.c */; };
+		BB000000200 /* libxmp/loaders/prowizard/pha.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000199 /* libxmp/loaders/prowizard/pha.c */; };
+		BB000000202 /* libxmp/loaders/prowizard/pm01.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000201 /* libxmp/loaders/prowizard/pm01.c */; };
+		BB000000204 /* libxmp/loaders/prowizard/pm10c.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000203 /* libxmp/loaders/prowizard/pm10c.c */; };
+		BB000000206 /* libxmp/loaders/prowizard/pm18a.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000205 /* libxmp/loaders/prowizard/pm18a.c */; };
+		BB000000208 /* libxmp/loaders/prowizard/pp10.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000207 /* libxmp/loaders/prowizard/pp10.c */; };
+		BB000000210 /* libxmp/loaders/prowizard/pp21.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000209 /* libxmp/loaders/prowizard/pp21.c */; };
+		BB000000212 /* libxmp/loaders/prowizard/prowiz.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000211 /* libxmp/loaders/prowizard/prowiz.c */; };
+		BB000000214 /* libxmp/loaders/prowizard/prun1.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000213 /* libxmp/loaders/prowizard/prun1.c */; };
+		BB000000216 /* libxmp/loaders/prowizard/prun2.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000215 /* libxmp/loaders/prowizard/prun2.c */; };
+		BB000000218 /* libxmp/loaders/prowizard/ptktable.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000217 /* libxmp/loaders/prowizard/ptktable.c */; };
+		BB000000220 /* libxmp/loaders/prowizard/skyt.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000219 /* libxmp/loaders/prowizard/skyt.c */; };
+		BB000000222 /* libxmp/loaders/prowizard/starpack.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000221 /* libxmp/loaders/prowizard/starpack.c */; };
+		BB000000224 /* libxmp/loaders/prowizard/tdd.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000223 /* libxmp/loaders/prowizard/tdd.c */; };
+		BB000000226 /* libxmp/loaders/prowizard/theplayer.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000225 /* libxmp/loaders/prowizard/theplayer.c */; };
+		BB000000228 /* libxmp/loaders/prowizard/titanics.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000227 /* libxmp/loaders/prowizard/titanics.c */; };
+		BB000000230 /* libxmp/loaders/prowizard/tp1.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000229 /* libxmp/loaders/prowizard/tp1.c */; };
+		BB000000232 /* libxmp/loaders/prowizard/tp3.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000231 /* libxmp/loaders/prowizard/tp3.c */; };
+		BB000000234 /* libxmp/loaders/prowizard/tuning.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000233 /* libxmp/loaders/prowizard/tuning.c */; };
+		BB000000236 /* libxmp/loaders/prowizard/unic.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000235 /* libxmp/loaders/prowizard/unic.c */; };
+		BB000000238 /* libxmp/loaders/prowizard/unic2.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000237 /* libxmp/loaders/prowizard/unic2.c */; };
+		BB000000240 /* libxmp/loaders/prowizard/wn.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000239 /* libxmp/loaders/prowizard/wn.c */; };
+		BB000000242 /* libxmp/loaders/prowizard/xann.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000241 /* libxmp/loaders/prowizard/xann.c */; };
+		BB000000244 /* libxmp/loaders/prowizard/zen.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000243 /* libxmp/loaders/prowizard/zen.c */; };
+		BB000000246 /* libxmp/loaders/pt3_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000245 /* libxmp/loaders/pt3_load.c */; };
+		BB000000248 /* libxmp/loaders/ptm_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000247 /* libxmp/loaders/ptm_load.c */; };
+		BB000000250 /* libxmp/loaders/pw_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000249 /* libxmp/loaders/pw_load.c */; };
+		BB000000252 /* libxmp/loaders/rtm_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000251 /* libxmp/loaders/rtm_load.c */; };
+		BB000000254 /* libxmp/loaders/s3m_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000253 /* libxmp/loaders/s3m_load.c */; };
+		BB000000256 /* libxmp/loaders/sample.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000255 /* libxmp/loaders/sample.c */; };
+		BB000000258 /* libxmp/loaders/sfx_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000257 /* libxmp/loaders/sfx_load.c */; };
+		BB000000260 /* libxmp/loaders/st_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000259 /* libxmp/loaders/st_load.c */; };
+		BB000000262 /* libxmp/loaders/stim_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000261 /* libxmp/loaders/stim_load.c */; };
+		BB000000264 /* libxmp/loaders/stm_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000263 /* libxmp/loaders/stm_load.c */; };
+		BB000000266 /* libxmp/loaders/stx_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000265 /* libxmp/loaders/stx_load.c */; };
+		BB000000268 /* libxmp/loaders/sym_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000267 /* libxmp/loaders/sym_load.c */; };
+		BB000000270 /* libxmp/loaders/ult_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000269 /* libxmp/loaders/ult_load.c */; };
+		BB000000272 /* libxmp/loaders/umx_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000271 /* libxmp/loaders/umx_load.c */; };
+		BB000000274 /* libxmp/loaders/voltable.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000273 /* libxmp/loaders/voltable.c */; };
+		BB000000276 /* libxmp/loaders/vorbis.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000275 /* libxmp/loaders/vorbis.c */; };
+		BB000000278 /* libxmp/loaders/xm_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000277 /* libxmp/loaders/xm_load.c */; };
+		BB000000280 /* libxmp/loaders/xmf_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000279 /* libxmp/loaders/xmf_load.c */; };
+		BB000000282 /* libxmp/md5.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000281 /* libxmp/md5.c */; };
+		BB000000284 /* libxmp/med_extras.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000283 /* libxmp/med_extras.c */; };
+		BB000000286 /* libxmp/memio.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000285 /* libxmp/memio.c */; };
+		BB000000288 /* libxmp/miniz_tinfl.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000287 /* libxmp/miniz_tinfl.c */; };
+		BB000000290 /* libxmp/misc.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000289 /* libxmp/misc.c */; };
+		BB000000292 /* libxmp/mix_all.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000291 /* libxmp/mix_all.c */; };
+		BB000000294 /* libxmp/mix_paula.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000293 /* libxmp/mix_paula.c */; };
+		BB000000296 /* libxmp/mixer.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000295 /* libxmp/mixer.c */; };
+		BB000000298 /* libxmp/mkstemp.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000297 /* libxmp/mkstemp.c */; };
+		BB000000300 /* libxmp/period.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000299 /* libxmp/period.c */; };
+		BB000000302 /* libxmp/player.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000301 /* libxmp/player.c */; };
+		BB000000304 /* libxmp/read_event.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000303 /* libxmp/read_event.c */; };
+		BB000000306 /* libxmp/scan.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000305 /* libxmp/scan.c */; };
+		BB000000308 /* libxmp/smix.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000307 /* libxmp/smix.c */; };
+		BB000000310 /* libxmp/tempfile.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000309 /* libxmp/tempfile.c */; };
+		BB000000312 /* libxmp/virtual.c in Sources */ = {isa = PBXBuildFile; fileRef = BB000000311 /* libxmp/virtual.c */; };
+		F93634C72F4E654300FAFCC4 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F93634C62F4E654300FAFCC4 /* FirebaseAuth */; };
+		F93634C92F4E654300FAFCC4 /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = F93634C82F4E654300FAFCC4 /* FirebaseDatabase */; };
+		F93634CB2F4E65B100FAFCC4 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F93634CA2F4E65B100FAFCC4 /* ChatMessage.swift */; };
+		F93634CD2F4E65CB00FAFCC4 /* FirebaseChatManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F93634CC2F4E65CB00FAFCC4 /* FirebaseChatManager.swift */; };
+		F93634CF2F4E65DC00FAFCC4 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F93634CE2F4E65DC00FAFCC4 /* ChatViewModel.swift */; };
+		F93634D12F4E65EB00FAFCC4 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F93634D02F4E65EB00FAFCC4 /* ChatView.swift */; };
+		F93634D32F4E6D1800FAFCC4 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = F93634D22F4E6D1800FAFCC4 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -101,6 +266,8 @@
 		AA000005008 /* ImportExportManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportExportManager.swift; sourceTree = "<group>"; };
 		AA000005010 /* OrientationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationManager.swift; sourceTree = "<group>"; };
 		AA000005012 /* VolumeButtonManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeButtonManager.swift; sourceTree = "<group>"; };
+		AA000005020 /* SoundtrackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundtrackManager.swift; sourceTree = "<group>"; };
+		AA000005022 /* ModPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModPlayer.swift; sourceTree = "<group>"; };
 		AA000006000 /* NativeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeBridge.swift; sourceTree = "<group>"; };
 		AA000006002 /* syncterm_ios.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = syncterm_ios.c; sourceTree = "<group>"; };
 		AA000006004 /* ios_ciolib.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ios_ciolib.c; sourceTree = "<group>"; };
@@ -167,6 +334,168 @@
 		AA000008027 /* snapshot_xibalba.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_xibalba.png; sourceTree = "<group>"; };
 		AA000008029 /* snapshot_distortion.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = snapshot_distortion.png; sourceTree = "<group>"; };
 		AA000009000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		BB000000001 /* modplayer_ios.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = modplayer_ios.c; sourceTree = "<group>"; };
+		BB000000003 /* libxmp/control.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/control.c; sourceTree = "<group>"; };
+		BB000000005 /* libxmp/dataio.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/dataio.c; sourceTree = "<group>"; };
+		BB000000007 /* libxmp/depackers/arc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/arc.c; sourceTree = "<group>"; };
+		BB000000009 /* libxmp/depackers/arc_unpack.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/arc_unpack.c; sourceTree = "<group>"; };
+		BB000000011 /* libxmp/depackers/arcfs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/arcfs.c; sourceTree = "<group>"; };
+		BB000000013 /* libxmp/depackers/bunzip2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/bunzip2.c; sourceTree = "<group>"; };
+		BB000000015 /* libxmp/depackers/crc32.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/crc32.c; sourceTree = "<group>"; };
+		BB000000017 /* libxmp/depackers/depacker.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/depacker.c; sourceTree = "<group>"; };
+		BB000000019 /* libxmp/depackers/gunzip.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/gunzip.c; sourceTree = "<group>"; };
+		BB000000021 /* libxmp/depackers/lzx.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/lzx.c; sourceTree = "<group>"; };
+		BB000000023 /* libxmp/depackers/lzx_unpack.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/lzx_unpack.c; sourceTree = "<group>"; };
+		BB000000025 /* libxmp/depackers/miniz_zip.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/miniz_zip.c; sourceTree = "<group>"; };
+		BB000000027 /* libxmp/depackers/mmcmp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/mmcmp.c; sourceTree = "<group>"; };
+		BB000000029 /* libxmp/depackers/ppdepack.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/ppdepack.c; sourceTree = "<group>"; };
+		BB000000031 /* libxmp/depackers/ptpopen.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/ptpopen.c; sourceTree = "<group>"; };
+		BB000000033 /* libxmp/depackers/s404_dec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/s404_dec.c; sourceTree = "<group>"; };
+		BB000000035 /* libxmp/depackers/uncompress.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/uncompress.c; sourceTree = "<group>"; };
+		BB000000037 /* libxmp/depackers/unlha.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/unlha.c; sourceTree = "<group>"; };
+		BB000000039 /* libxmp/depackers/unsqsh.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/unsqsh.c; sourceTree = "<group>"; };
+		BB000000041 /* libxmp/depackers/unxz.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/unxz.c; sourceTree = "<group>"; };
+		BB000000043 /* libxmp/depackers/unzip.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/unzip.c; sourceTree = "<group>"; };
+		BB000000045 /* libxmp/depackers/xfd.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/xfd.c; sourceTree = "<group>"; };
+		BB000000047 /* libxmp/depackers/xfd_link.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/xfd_link.c; sourceTree = "<group>"; };
+		BB000000049 /* libxmp/depackers/xfnmatch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/xfnmatch.c; sourceTree = "<group>"; };
+		BB000000051 /* libxmp/depackers/xz_dec_lzma2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/xz_dec_lzma2.c; sourceTree = "<group>"; };
+		BB000000053 /* libxmp/depackers/xz_dec_stream.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/depackers/xz_dec_stream.c; sourceTree = "<group>"; };
+		BB000000055 /* libxmp/effects.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/effects.c; sourceTree = "<group>"; };
+		BB000000057 /* libxmp/extras.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/extras.c; sourceTree = "<group>"; };
+		BB000000059 /* libxmp/far_extras.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/far_extras.c; sourceTree = "<group>"; };
+		BB000000061 /* libxmp/filetype.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/filetype.c; sourceTree = "<group>"; };
+		BB000000063 /* libxmp/filter.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/filter.c; sourceTree = "<group>"; };
+		BB000000065 /* libxmp/format.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/format.c; sourceTree = "<group>"; };
+		BB000000067 /* libxmp/hio.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/hio.c; sourceTree = "<group>"; };
+		BB000000069 /* libxmp/hmn_extras.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/hmn_extras.c; sourceTree = "<group>"; };
+		BB000000071 /* libxmp/lfo.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/lfo.c; sourceTree = "<group>"; };
+		BB000000073 /* libxmp/load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/load.c; sourceTree = "<group>"; };
+		BB000000075 /* libxmp/load_helpers.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/load_helpers.c; sourceTree = "<group>"; };
+		BB000000077 /* libxmp/loaders/669_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/669_load.c; sourceTree = "<group>"; };
+		BB000000079 /* libxmp/loaders/abk_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/abk_load.c; sourceTree = "<group>"; };
+		BB000000081 /* libxmp/loaders/amf_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/amf_load.c; sourceTree = "<group>"; };
+		BB000000083 /* libxmp/loaders/arch_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/arch_load.c; sourceTree = "<group>"; };
+		BB000000085 /* libxmp/loaders/asylum_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/asylum_load.c; sourceTree = "<group>"; };
+		BB000000087 /* libxmp/loaders/chip_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/chip_load.c; sourceTree = "<group>"; };
+		BB000000089 /* libxmp/loaders/coco_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/coco_load.c; sourceTree = "<group>"; };
+		BB000000091 /* libxmp/loaders/common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/common.c; sourceTree = "<group>"; };
+		BB000000093 /* libxmp/loaders/dbm_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/dbm_load.c; sourceTree = "<group>"; };
+		BB000000095 /* libxmp/loaders/digi_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/digi_load.c; sourceTree = "<group>"; };
+		BB000000097 /* libxmp/loaders/dt_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/dt_load.c; sourceTree = "<group>"; };
+		BB000000099 /* libxmp/loaders/emod_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/emod_load.c; sourceTree = "<group>"; };
+		BB000000101 /* libxmp/loaders/far_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/far_load.c; sourceTree = "<group>"; };
+		BB000000103 /* libxmp/loaders/flt_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/flt_load.c; sourceTree = "<group>"; };
+		BB000000105 /* libxmp/loaders/fnk_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/fnk_load.c; sourceTree = "<group>"; };
+		BB000000107 /* libxmp/loaders/gal4_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/gal4_load.c; sourceTree = "<group>"; };
+		BB000000109 /* libxmp/loaders/gal5_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/gal5_load.c; sourceTree = "<group>"; };
+		BB000000111 /* libxmp/loaders/gdm_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/gdm_load.c; sourceTree = "<group>"; };
+		BB000000113 /* libxmp/loaders/hmn_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/hmn_load.c; sourceTree = "<group>"; };
+		BB000000115 /* libxmp/loaders/ice_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/ice_load.c; sourceTree = "<group>"; };
+		BB000000117 /* libxmp/loaders/iff.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/iff.c; sourceTree = "<group>"; };
+		BB000000119 /* libxmp/loaders/imf_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/imf_load.c; sourceTree = "<group>"; };
+		BB000000121 /* libxmp/loaders/ims_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/ims_load.c; sourceTree = "<group>"; };
+		BB000000123 /* libxmp/loaders/it_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/it_load.c; sourceTree = "<group>"; };
+		BB000000125 /* libxmp/loaders/itsex.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/itsex.c; sourceTree = "<group>"; };
+		BB000000127 /* libxmp/loaders/liq_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/liq_load.c; sourceTree = "<group>"; };
+		BB000000129 /* libxmp/loaders/lzw.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/lzw.c; sourceTree = "<group>"; };
+		BB000000131 /* libxmp/loaders/masi16_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/masi16_load.c; sourceTree = "<group>"; };
+		BB000000133 /* libxmp/loaders/masi_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/masi_load.c; sourceTree = "<group>"; };
+		BB000000135 /* libxmp/loaders/mdl_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/mdl_load.c; sourceTree = "<group>"; };
+		BB000000137 /* libxmp/loaders/med2_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/med2_load.c; sourceTree = "<group>"; };
+		BB000000139 /* libxmp/loaders/med3_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/med3_load.c; sourceTree = "<group>"; };
+		BB000000141 /* libxmp/loaders/med4_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/med4_load.c; sourceTree = "<group>"; };
+		BB000000143 /* libxmp/loaders/mfp_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/mfp_load.c; sourceTree = "<group>"; };
+		BB000000145 /* libxmp/loaders/mgt_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/mgt_load.c; sourceTree = "<group>"; };
+		BB000000147 /* libxmp/loaders/mmd1_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/mmd1_load.c; sourceTree = "<group>"; };
+		BB000000149 /* libxmp/loaders/mmd3_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/mmd3_load.c; sourceTree = "<group>"; };
+		BB000000151 /* libxmp/loaders/mmd_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/mmd_common.c; sourceTree = "<group>"; };
+		BB000000153 /* libxmp/loaders/mod_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/mod_load.c; sourceTree = "<group>"; };
+		BB000000155 /* libxmp/loaders/mtm_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/mtm_load.c; sourceTree = "<group>"; };
+		BB000000157 /* libxmp/loaders/muse_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/muse_load.c; sourceTree = "<group>"; };
+		BB000000159 /* libxmp/loaders/no_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/no_load.c; sourceTree = "<group>"; };
+		BB000000161 /* libxmp/loaders/okt_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/okt_load.c; sourceTree = "<group>"; };
+		BB000000163 /* libxmp/loaders/prowizard/ac1d.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/ac1d.c; sourceTree = "<group>"; };
+		BB000000165 /* libxmp/loaders/prowizard/di.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/di.c; sourceTree = "<group>"; };
+		BB000000167 /* libxmp/loaders/prowizard/eureka.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/eureka.c; sourceTree = "<group>"; };
+		BB000000169 /* libxmp/loaders/prowizard/fc-m.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "libxmp/loaders/prowizard/fc-m.c"; sourceTree = "<group>"; };
+		BB000000171 /* libxmp/loaders/prowizard/fuchs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/fuchs.c; sourceTree = "<group>"; };
+		BB000000173 /* libxmp/loaders/prowizard/fuzzac.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/fuzzac.c; sourceTree = "<group>"; };
+		BB000000175 /* libxmp/loaders/prowizard/gmc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/gmc.c; sourceTree = "<group>"; };
+		BB000000177 /* libxmp/loaders/prowizard/heatseek.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/heatseek.c; sourceTree = "<group>"; };
+		BB000000179 /* libxmp/loaders/prowizard/hrt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/hrt.c; sourceTree = "<group>"; };
+		BB000000181 /* libxmp/loaders/prowizard/ksm.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/ksm.c; sourceTree = "<group>"; };
+		BB000000183 /* libxmp/loaders/prowizard/mp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/mp.c; sourceTree = "<group>"; };
+		BB000000185 /* libxmp/loaders/prowizard/noiserun.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/noiserun.c; sourceTree = "<group>"; };
+		BB000000187 /* libxmp/loaders/prowizard/novotrade.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/novotrade.c; sourceTree = "<group>"; };
+		BB000000189 /* libxmp/loaders/prowizard/np1.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/np1.c; sourceTree = "<group>"; };
+		BB000000191 /* libxmp/loaders/prowizard/np2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/np2.c; sourceTree = "<group>"; };
+		BB000000193 /* libxmp/loaders/prowizard/np3.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/np3.c; sourceTree = "<group>"; };
+		BB000000195 /* libxmp/loaders/prowizard/p40.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/p40.c; sourceTree = "<group>"; };
+		BB000000197 /* libxmp/loaders/prowizard/p61a.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/p61a.c; sourceTree = "<group>"; };
+		BB000000199 /* libxmp/loaders/prowizard/pha.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/pha.c; sourceTree = "<group>"; };
+		BB000000201 /* libxmp/loaders/prowizard/pm01.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/pm01.c; sourceTree = "<group>"; };
+		BB000000203 /* libxmp/loaders/prowizard/pm10c.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/pm10c.c; sourceTree = "<group>"; };
+		BB000000205 /* libxmp/loaders/prowizard/pm18a.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/pm18a.c; sourceTree = "<group>"; };
+		BB000000207 /* libxmp/loaders/prowizard/pp10.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/pp10.c; sourceTree = "<group>"; };
+		BB000000209 /* libxmp/loaders/prowizard/pp21.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/pp21.c; sourceTree = "<group>"; };
+		BB000000211 /* libxmp/loaders/prowizard/prowiz.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/prowiz.c; sourceTree = "<group>"; };
+		BB000000213 /* libxmp/loaders/prowizard/prun1.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/prun1.c; sourceTree = "<group>"; };
+		BB000000215 /* libxmp/loaders/prowizard/prun2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/prun2.c; sourceTree = "<group>"; };
+		BB000000217 /* libxmp/loaders/prowizard/ptktable.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/ptktable.c; sourceTree = "<group>"; };
+		BB000000219 /* libxmp/loaders/prowizard/skyt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/skyt.c; sourceTree = "<group>"; };
+		BB000000221 /* libxmp/loaders/prowizard/starpack.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/starpack.c; sourceTree = "<group>"; };
+		BB000000223 /* libxmp/loaders/prowizard/tdd.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/tdd.c; sourceTree = "<group>"; };
+		BB000000225 /* libxmp/loaders/prowizard/theplayer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/theplayer.c; sourceTree = "<group>"; };
+		BB000000227 /* libxmp/loaders/prowizard/titanics.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/titanics.c; sourceTree = "<group>"; };
+		BB000000229 /* libxmp/loaders/prowizard/tp1.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/tp1.c; sourceTree = "<group>"; };
+		BB000000231 /* libxmp/loaders/prowizard/tp3.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/tp3.c; sourceTree = "<group>"; };
+		BB000000233 /* libxmp/loaders/prowizard/tuning.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/tuning.c; sourceTree = "<group>"; };
+		BB000000235 /* libxmp/loaders/prowizard/unic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/unic.c; sourceTree = "<group>"; };
+		BB000000237 /* libxmp/loaders/prowizard/unic2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/unic2.c; sourceTree = "<group>"; };
+		BB000000239 /* libxmp/loaders/prowizard/wn.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/wn.c; sourceTree = "<group>"; };
+		BB000000241 /* libxmp/loaders/prowizard/xann.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/xann.c; sourceTree = "<group>"; };
+		BB000000243 /* libxmp/loaders/prowizard/zen.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/prowizard/zen.c; sourceTree = "<group>"; };
+		BB000000245 /* libxmp/loaders/pt3_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/pt3_load.c; sourceTree = "<group>"; };
+		BB000000247 /* libxmp/loaders/ptm_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/ptm_load.c; sourceTree = "<group>"; };
+		BB000000249 /* libxmp/loaders/pw_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/pw_load.c; sourceTree = "<group>"; };
+		BB000000251 /* libxmp/loaders/rtm_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/rtm_load.c; sourceTree = "<group>"; };
+		BB000000253 /* libxmp/loaders/s3m_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/s3m_load.c; sourceTree = "<group>"; };
+		BB000000255 /* libxmp/loaders/sample.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/sample.c; sourceTree = "<group>"; };
+		BB000000257 /* libxmp/loaders/sfx_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/sfx_load.c; sourceTree = "<group>"; };
+		BB000000259 /* libxmp/loaders/st_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/st_load.c; sourceTree = "<group>"; };
+		BB000000261 /* libxmp/loaders/stim_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/stim_load.c; sourceTree = "<group>"; };
+		BB000000263 /* libxmp/loaders/stm_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/stm_load.c; sourceTree = "<group>"; };
+		BB000000265 /* libxmp/loaders/stx_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/stx_load.c; sourceTree = "<group>"; };
+		BB000000267 /* libxmp/loaders/sym_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/sym_load.c; sourceTree = "<group>"; };
+		BB000000269 /* libxmp/loaders/ult_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/ult_load.c; sourceTree = "<group>"; };
+		BB000000271 /* libxmp/loaders/umx_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/umx_load.c; sourceTree = "<group>"; };
+		BB000000273 /* libxmp/loaders/voltable.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/voltable.c; sourceTree = "<group>"; };
+		BB000000275 /* libxmp/loaders/vorbis.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/vorbis.c; sourceTree = "<group>"; };
+		BB000000277 /* libxmp/loaders/xm_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/xm_load.c; sourceTree = "<group>"; };
+		BB000000279 /* libxmp/loaders/xmf_load.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/loaders/xmf_load.c; sourceTree = "<group>"; };
+		BB000000281 /* libxmp/md5.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/md5.c; sourceTree = "<group>"; };
+		BB000000283 /* libxmp/med_extras.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/med_extras.c; sourceTree = "<group>"; };
+		BB000000285 /* libxmp/memio.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/memio.c; sourceTree = "<group>"; };
+		BB000000287 /* libxmp/miniz_tinfl.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/miniz_tinfl.c; sourceTree = "<group>"; };
+		BB000000289 /* libxmp/misc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/misc.c; sourceTree = "<group>"; };
+		BB000000291 /* libxmp/mix_all.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/mix_all.c; sourceTree = "<group>"; };
+		BB000000293 /* libxmp/mix_paula.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/mix_paula.c; sourceTree = "<group>"; };
+		BB000000295 /* libxmp/mixer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/mixer.c; sourceTree = "<group>"; };
+		BB000000297 /* libxmp/mkstemp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/mkstemp.c; sourceTree = "<group>"; };
+		BB000000299 /* libxmp/period.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/period.c; sourceTree = "<group>"; };
+		BB000000301 /* libxmp/player.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/player.c; sourceTree = "<group>"; };
+		BB000000303 /* libxmp/read_event.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/read_event.c; sourceTree = "<group>"; };
+		BB000000305 /* libxmp/scan.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/scan.c; sourceTree = "<group>"; };
+		BB000000307 /* libxmp/smix.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/smix.c; sourceTree = "<group>"; };
+		BB000000309 /* libxmp/tempfile.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/tempfile.c; sourceTree = "<group>"; };
+		BB000000311 /* libxmp/virtual.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/virtual.c; sourceTree = "<group>"; };
+		F93634C32F4E643E00FAFCC4 /* GoogleService-Info 2.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info 2.plist"; sourceTree = "<group>"; };
+		F93634CA2F4E65B100FAFCC4 /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
+		F93634CC2F4E65CB00FAFCC4 /* FirebaseChatManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseChatManager.swift; sourceTree = "<group>"; };
+		F93634CE2F4E65DC00FAFCC4 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
+		F93634D02F4E65EB00FAFCC4 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		F93634D22F4E6D1800FAFCC4 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -174,7 +503,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F93634C92F4E654300FAFCC4 /* FirebaseDatabase in Frameworks */,
 				AA000006072 /* libcl.a in Frameworks */,
+				F93634C72F4E654300FAFCC4 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -192,6 +523,7 @@
 		AA200000000 = {
 			isa = PBXGroup;
 			children = (
+				F93634D22F4E6D1800FAFCC4 /* GoogleService-Info.plist */,
 				AA200001000 /* TERMinator */,
 				AA200002000 /* Products */,
 			);
@@ -200,6 +532,7 @@
 		AA200001000 /* TERMinator */ = {
 			isa = PBXGroup;
 			children = (
+				F93634C32F4E643E00FAFCC4 /* GoogleService-Info 2.plist */,
 				AA000001000 /* TERMinatorApp.swift */,
 				AA000006009 /* TERMinator-Bridging-Header.h */,
 				AA200003000 /* Models */,
@@ -227,6 +560,7 @@
 		AA200003000 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				F93634CA2F4E65B100FAFCC4 /* ChatMessage.swift */,
 				AA000002000 /* BBSEntry.swift */,
 			);
 			path = Models;
@@ -235,6 +569,7 @@
 		AA200004000 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				F93634D02F4E65EB00FAFCC4 /* ChatView.swift */,
 				AA000003000 /* HomeView.swift */,
 				AA000003002 /* BBSListView.swift */,
 				AA000003004 /* TerminalView.swift */,
@@ -251,6 +586,7 @@
 		AA200005000 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				F93634CE2F4E65DC00FAFCC4 /* ChatViewModel.swift */,
 				AA000004000 /* TerminalViewModel.swift */,
 			);
 			path = ViewModels;
@@ -259,6 +595,7 @@
 		AA200006000 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				F93634CC2F4E65CB00FAFCC4 /* FirebaseChatManager.swift */,
 				AA000005000 /* BellManager.swift */,
 				AA000005002 /* SessionLogger.swift */,
 				AA000005004 /* TransferManager.swift */,
@@ -266,6 +603,8 @@
 				AA000005008 /* ImportExportManager.swift */,
 				AA000005010 /* OrientationManager.swift */,
 				AA000005012 /* VolumeButtonManager.swift */,
+				AA000005020 /* SoundtrackManager.swift */,
+				AA000005022 /* ModPlayer.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -325,6 +664,162 @@
 				AA000006032 /* wrapdll.h */,
 				AA000006033 /* sexyz.h */,
 				AA000006034 /* telnet.h */,
+				BB000000001 /* modplayer_ios.c */,
+				BB000000003 /* libxmp/control.c */,
+				BB000000005 /* libxmp/dataio.c */,
+				BB000000007 /* libxmp/depackers/arc.c */,
+				BB000000009 /* libxmp/depackers/arc_unpack.c */,
+				BB000000011 /* libxmp/depackers/arcfs.c */,
+				BB000000013 /* libxmp/depackers/bunzip2.c */,
+				BB000000015 /* libxmp/depackers/crc32.c */,
+				BB000000017 /* libxmp/depackers/depacker.c */,
+				BB000000019 /* libxmp/depackers/gunzip.c */,
+				BB000000021 /* libxmp/depackers/lzx.c */,
+				BB000000023 /* libxmp/depackers/lzx_unpack.c */,
+				BB000000025 /* libxmp/depackers/miniz_zip.c */,
+				BB000000027 /* libxmp/depackers/mmcmp.c */,
+				BB000000029 /* libxmp/depackers/ppdepack.c */,
+				BB000000031 /* libxmp/depackers/ptpopen.c */,
+				BB000000033 /* libxmp/depackers/s404_dec.c */,
+				BB000000035 /* libxmp/depackers/uncompress.c */,
+				BB000000037 /* libxmp/depackers/unlha.c */,
+				BB000000039 /* libxmp/depackers/unsqsh.c */,
+				BB000000041 /* libxmp/depackers/unxz.c */,
+				BB000000043 /* libxmp/depackers/unzip.c */,
+				BB000000045 /* libxmp/depackers/xfd.c */,
+				BB000000047 /* libxmp/depackers/xfd_link.c */,
+				BB000000049 /* libxmp/depackers/xfnmatch.c */,
+				BB000000051 /* libxmp/depackers/xz_dec_lzma2.c */,
+				BB000000053 /* libxmp/depackers/xz_dec_stream.c */,
+				BB000000055 /* libxmp/effects.c */,
+				BB000000057 /* libxmp/extras.c */,
+				BB000000059 /* libxmp/far_extras.c */,
+				BB000000061 /* libxmp/filetype.c */,
+				BB000000063 /* libxmp/filter.c */,
+				BB000000065 /* libxmp/format.c */,
+				BB000000067 /* libxmp/hio.c */,
+				BB000000069 /* libxmp/hmn_extras.c */,
+				BB000000071 /* libxmp/lfo.c */,
+				BB000000073 /* libxmp/load.c */,
+				BB000000075 /* libxmp/load_helpers.c */,
+				BB000000077 /* libxmp/loaders/669_load.c */,
+				BB000000079 /* libxmp/loaders/abk_load.c */,
+				BB000000081 /* libxmp/loaders/amf_load.c */,
+				BB000000083 /* libxmp/loaders/arch_load.c */,
+				BB000000085 /* libxmp/loaders/asylum_load.c */,
+				BB000000087 /* libxmp/loaders/chip_load.c */,
+				BB000000089 /* libxmp/loaders/coco_load.c */,
+				BB000000091 /* libxmp/loaders/common.c */,
+				BB000000093 /* libxmp/loaders/dbm_load.c */,
+				BB000000095 /* libxmp/loaders/digi_load.c */,
+				BB000000097 /* libxmp/loaders/dt_load.c */,
+				BB000000099 /* libxmp/loaders/emod_load.c */,
+				BB000000101 /* libxmp/loaders/far_load.c */,
+				BB000000103 /* libxmp/loaders/flt_load.c */,
+				BB000000105 /* libxmp/loaders/fnk_load.c */,
+				BB000000107 /* libxmp/loaders/gal4_load.c */,
+				BB000000109 /* libxmp/loaders/gal5_load.c */,
+				BB000000111 /* libxmp/loaders/gdm_load.c */,
+				BB000000113 /* libxmp/loaders/hmn_load.c */,
+				BB000000115 /* libxmp/loaders/ice_load.c */,
+				BB000000117 /* libxmp/loaders/iff.c */,
+				BB000000119 /* libxmp/loaders/imf_load.c */,
+				BB000000121 /* libxmp/loaders/ims_load.c */,
+				BB000000123 /* libxmp/loaders/it_load.c */,
+				BB000000125 /* libxmp/loaders/itsex.c */,
+				BB000000127 /* libxmp/loaders/liq_load.c */,
+				BB000000129 /* libxmp/loaders/lzw.c */,
+				BB000000131 /* libxmp/loaders/masi16_load.c */,
+				BB000000133 /* libxmp/loaders/masi_load.c */,
+				BB000000135 /* libxmp/loaders/mdl_load.c */,
+				BB000000137 /* libxmp/loaders/med2_load.c */,
+				BB000000139 /* libxmp/loaders/med3_load.c */,
+				BB000000141 /* libxmp/loaders/med4_load.c */,
+				BB000000143 /* libxmp/loaders/mfp_load.c */,
+				BB000000145 /* libxmp/loaders/mgt_load.c */,
+				BB000000147 /* libxmp/loaders/mmd1_load.c */,
+				BB000000149 /* libxmp/loaders/mmd3_load.c */,
+				BB000000151 /* libxmp/loaders/mmd_common.c */,
+				BB000000153 /* libxmp/loaders/mod_load.c */,
+				BB000000155 /* libxmp/loaders/mtm_load.c */,
+				BB000000157 /* libxmp/loaders/muse_load.c */,
+				BB000000159 /* libxmp/loaders/no_load.c */,
+				BB000000161 /* libxmp/loaders/okt_load.c */,
+				BB000000163 /* libxmp/loaders/prowizard/ac1d.c */,
+				BB000000165 /* libxmp/loaders/prowizard/di.c */,
+				BB000000167 /* libxmp/loaders/prowizard/eureka.c */,
+				BB000000169 /* libxmp/loaders/prowizard/fc-m.c */,
+				BB000000171 /* libxmp/loaders/prowizard/fuchs.c */,
+				BB000000173 /* libxmp/loaders/prowizard/fuzzac.c */,
+				BB000000175 /* libxmp/loaders/prowizard/gmc.c */,
+				BB000000177 /* libxmp/loaders/prowizard/heatseek.c */,
+				BB000000179 /* libxmp/loaders/prowizard/hrt.c */,
+				BB000000181 /* libxmp/loaders/prowizard/ksm.c */,
+				BB000000183 /* libxmp/loaders/prowizard/mp.c */,
+				BB000000185 /* libxmp/loaders/prowizard/noiserun.c */,
+				BB000000187 /* libxmp/loaders/prowizard/novotrade.c */,
+				BB000000189 /* libxmp/loaders/prowizard/np1.c */,
+				BB000000191 /* libxmp/loaders/prowizard/np2.c */,
+				BB000000193 /* libxmp/loaders/prowizard/np3.c */,
+				BB000000195 /* libxmp/loaders/prowizard/p40.c */,
+				BB000000197 /* libxmp/loaders/prowizard/p61a.c */,
+				BB000000199 /* libxmp/loaders/prowizard/pha.c */,
+				BB000000201 /* libxmp/loaders/prowizard/pm01.c */,
+				BB000000203 /* libxmp/loaders/prowizard/pm10c.c */,
+				BB000000205 /* libxmp/loaders/prowizard/pm18a.c */,
+				BB000000207 /* libxmp/loaders/prowizard/pp10.c */,
+				BB000000209 /* libxmp/loaders/prowizard/pp21.c */,
+				BB000000211 /* libxmp/loaders/prowizard/prowiz.c */,
+				BB000000213 /* libxmp/loaders/prowizard/prun1.c */,
+				BB000000215 /* libxmp/loaders/prowizard/prun2.c */,
+				BB000000217 /* libxmp/loaders/prowizard/ptktable.c */,
+				BB000000219 /* libxmp/loaders/prowizard/skyt.c */,
+				BB000000221 /* libxmp/loaders/prowizard/starpack.c */,
+				BB000000223 /* libxmp/loaders/prowizard/tdd.c */,
+				BB000000225 /* libxmp/loaders/prowizard/theplayer.c */,
+				BB000000227 /* libxmp/loaders/prowizard/titanics.c */,
+				BB000000229 /* libxmp/loaders/prowizard/tp1.c */,
+				BB000000231 /* libxmp/loaders/prowizard/tp3.c */,
+				BB000000233 /* libxmp/loaders/prowizard/tuning.c */,
+				BB000000235 /* libxmp/loaders/prowizard/unic.c */,
+				BB000000237 /* libxmp/loaders/prowizard/unic2.c */,
+				BB000000239 /* libxmp/loaders/prowizard/wn.c */,
+				BB000000241 /* libxmp/loaders/prowizard/xann.c */,
+				BB000000243 /* libxmp/loaders/prowizard/zen.c */,
+				BB000000245 /* libxmp/loaders/pt3_load.c */,
+				BB000000247 /* libxmp/loaders/ptm_load.c */,
+				BB000000249 /* libxmp/loaders/pw_load.c */,
+				BB000000251 /* libxmp/loaders/rtm_load.c */,
+				BB000000253 /* libxmp/loaders/s3m_load.c */,
+				BB000000255 /* libxmp/loaders/sample.c */,
+				BB000000257 /* libxmp/loaders/sfx_load.c */,
+				BB000000259 /* libxmp/loaders/st_load.c */,
+				BB000000261 /* libxmp/loaders/stim_load.c */,
+				BB000000263 /* libxmp/loaders/stm_load.c */,
+				BB000000265 /* libxmp/loaders/stx_load.c */,
+				BB000000267 /* libxmp/loaders/sym_load.c */,
+				BB000000269 /* libxmp/loaders/ult_load.c */,
+				BB000000271 /* libxmp/loaders/umx_load.c */,
+				BB000000273 /* libxmp/loaders/voltable.c */,
+				BB000000275 /* libxmp/loaders/vorbis.c */,
+				BB000000277 /* libxmp/loaders/xm_load.c */,
+				BB000000279 /* libxmp/loaders/xmf_load.c */,
+				BB000000281 /* libxmp/md5.c */,
+				BB000000283 /* libxmp/med_extras.c */,
+				BB000000285 /* libxmp/memio.c */,
+				BB000000287 /* libxmp/miniz_tinfl.c */,
+				BB000000289 /* libxmp/misc.c */,
+				BB000000291 /* libxmp/mix_all.c */,
+				BB000000293 /* libxmp/mix_paula.c */,
+				BB000000295 /* libxmp/mixer.c */,
+				BB000000297 /* libxmp/mkstemp.c */,
+				BB000000299 /* libxmp/period.c */,
+				BB000000301 /* libxmp/player.c */,
+				BB000000303 /* libxmp/read_event.c */,
+				BB000000305 /* libxmp/scan.c */,
+				BB000000307 /* libxmp/smix.c */,
+				BB000000309 /* libxmp/tempfile.c */,
+				BB000000311 /* libxmp/virtual.c */,
 			);
 			path = Bridge;
 			sourceTree = "<group>";
@@ -398,6 +893,9 @@
 				Base,
 			);
 			mainGroup = AA200000000;
+			packageReferences = (
+				F93634C52F4E654300FAFCC4 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			productRefGroup = AA200002000 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -412,6 +910,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F93634D32F4E6D1800FAFCC4 /* GoogleService-Info.plist in Resources */,
 				AA000008001 /* Assets.xcassets in Resources */,
 				AA000008010 /* snapshot_absinthe.png in Resources */,
 				AA000008012 /* snapshot_deadmodem.png in Resources */,
@@ -468,6 +967,7 @@
 				AA000006044 /* syncterm/conn.c in Sources */,
 				AA000006046 /* syncterm/conn_telnet.c in Sources */,
 				AA000006048 /* syncterm/telnet_io.c in Sources */,
+				F93634CB2F4E65B100FAFCC4 /* ChatMessage.swift in Sources */,
 				AA000006092 /* syncterm/rlogin.c in Sources */,
 				AA000006050 /* xpdev/sockwrap.c in Sources */,
 				AA000006052 /* xpdev/threadwrap.c in Sources */,
@@ -491,6 +991,167 @@
 				AA000006090 /* xpdev/datewrap.c in Sources */,
 				AA000007001 /* Colors.swift in Sources */,
 				AA0000000000000000000002 /* UIScale.swift in Sources */,
+				AA000005021 /* SoundtrackManager.swift in Sources */,
+				AA000005023 /* ModPlayer.swift in Sources */,
+				BB000000002 /* modplayer_ios.c in Sources */,
+				BB000000004 /* libxmp/control.c in Sources */,
+				BB000000006 /* libxmp/dataio.c in Sources */,
+				BB000000008 /* libxmp/depackers/arc.c in Sources */,
+				BB000000010 /* libxmp/depackers/arc_unpack.c in Sources */,
+				BB000000012 /* libxmp/depackers/arcfs.c in Sources */,
+				BB000000014 /* libxmp/depackers/bunzip2.c in Sources */,
+				BB000000016 /* libxmp/depackers/crc32.c in Sources */,
+				BB000000018 /* libxmp/depackers/depacker.c in Sources */,
+				BB000000020 /* libxmp/depackers/gunzip.c in Sources */,
+				BB000000022 /* libxmp/depackers/lzx.c in Sources */,
+				BB000000024 /* libxmp/depackers/lzx_unpack.c in Sources */,
+				BB000000026 /* libxmp/depackers/miniz_zip.c in Sources */,
+				BB000000028 /* libxmp/depackers/mmcmp.c in Sources */,
+				BB000000030 /* libxmp/depackers/ppdepack.c in Sources */,
+				BB000000032 /* libxmp/depackers/ptpopen.c in Sources */,
+				BB000000034 /* libxmp/depackers/s404_dec.c in Sources */,
+				BB000000036 /* libxmp/depackers/uncompress.c in Sources */,
+				BB000000038 /* libxmp/depackers/unlha.c in Sources */,
+				BB000000040 /* libxmp/depackers/unsqsh.c in Sources */,
+				BB000000042 /* libxmp/depackers/unxz.c in Sources */,
+				BB000000044 /* libxmp/depackers/unzip.c in Sources */,
+				BB000000046 /* libxmp/depackers/xfd.c in Sources */,
+				BB000000048 /* libxmp/depackers/xfd_link.c in Sources */,
+				BB000000050 /* libxmp/depackers/xfnmatch.c in Sources */,
+				BB000000052 /* libxmp/depackers/xz_dec_lzma2.c in Sources */,
+				BB000000054 /* libxmp/depackers/xz_dec_stream.c in Sources */,
+				F93634CD2F4E65CB00FAFCC4 /* FirebaseChatManager.swift in Sources */,
+				BB000000056 /* libxmp/effects.c in Sources */,
+				BB000000058 /* libxmp/extras.c in Sources */,
+				BB000000060 /* libxmp/far_extras.c in Sources */,
+				F93634D12F4E65EB00FAFCC4 /* ChatView.swift in Sources */,
+				BB000000062 /* libxmp/filetype.c in Sources */,
+				BB000000064 /* libxmp/filter.c in Sources */,
+				BB000000066 /* libxmp/format.c in Sources */,
+				BB000000068 /* libxmp/hio.c in Sources */,
+				BB000000070 /* libxmp/hmn_extras.c in Sources */,
+				BB000000072 /* libxmp/lfo.c in Sources */,
+				BB000000074 /* libxmp/load.c in Sources */,
+				BB000000076 /* libxmp/load_helpers.c in Sources */,
+				BB000000078 /* libxmp/loaders/669_load.c in Sources */,
+				BB000000080 /* libxmp/loaders/abk_load.c in Sources */,
+				BB000000082 /* libxmp/loaders/amf_load.c in Sources */,
+				BB000000084 /* libxmp/loaders/arch_load.c in Sources */,
+				BB000000086 /* libxmp/loaders/asylum_load.c in Sources */,
+				BB000000088 /* libxmp/loaders/chip_load.c in Sources */,
+				BB000000090 /* libxmp/loaders/coco_load.c in Sources */,
+				BB000000092 /* libxmp/loaders/common.c in Sources */,
+				BB000000094 /* libxmp/loaders/dbm_load.c in Sources */,
+				BB000000096 /* libxmp/loaders/digi_load.c in Sources */,
+				BB000000098 /* libxmp/loaders/dt_load.c in Sources */,
+				BB000000100 /* libxmp/loaders/emod_load.c in Sources */,
+				BB000000102 /* libxmp/loaders/far_load.c in Sources */,
+				BB000000104 /* libxmp/loaders/flt_load.c in Sources */,
+				BB000000106 /* libxmp/loaders/fnk_load.c in Sources */,
+				BB000000108 /* libxmp/loaders/gal4_load.c in Sources */,
+				BB000000110 /* libxmp/loaders/gal5_load.c in Sources */,
+				BB000000112 /* libxmp/loaders/gdm_load.c in Sources */,
+				BB000000114 /* libxmp/loaders/hmn_load.c in Sources */,
+				BB000000116 /* libxmp/loaders/ice_load.c in Sources */,
+				BB000000118 /* libxmp/loaders/iff.c in Sources */,
+				BB000000120 /* libxmp/loaders/imf_load.c in Sources */,
+				BB000000122 /* libxmp/loaders/ims_load.c in Sources */,
+				BB000000124 /* libxmp/loaders/it_load.c in Sources */,
+				BB000000126 /* libxmp/loaders/itsex.c in Sources */,
+				BB000000128 /* libxmp/loaders/liq_load.c in Sources */,
+				BB000000130 /* libxmp/loaders/lzw.c in Sources */,
+				BB000000132 /* libxmp/loaders/masi16_load.c in Sources */,
+				BB000000134 /* libxmp/loaders/masi_load.c in Sources */,
+				BB000000136 /* libxmp/loaders/mdl_load.c in Sources */,
+				BB000000138 /* libxmp/loaders/med2_load.c in Sources */,
+				BB000000140 /* libxmp/loaders/med3_load.c in Sources */,
+				BB000000142 /* libxmp/loaders/med4_load.c in Sources */,
+				BB000000144 /* libxmp/loaders/mfp_load.c in Sources */,
+				BB000000146 /* libxmp/loaders/mgt_load.c in Sources */,
+				BB000000148 /* libxmp/loaders/mmd1_load.c in Sources */,
+				BB000000150 /* libxmp/loaders/mmd3_load.c in Sources */,
+				BB000000152 /* libxmp/loaders/mmd_common.c in Sources */,
+				BB000000154 /* libxmp/loaders/mod_load.c in Sources */,
+				F93634CF2F4E65DC00FAFCC4 /* ChatViewModel.swift in Sources */,
+				BB000000156 /* libxmp/loaders/mtm_load.c in Sources */,
+				BB000000158 /* libxmp/loaders/muse_load.c in Sources */,
+				BB000000160 /* libxmp/loaders/no_load.c in Sources */,
+				BB000000162 /* libxmp/loaders/okt_load.c in Sources */,
+				BB000000164 /* libxmp/loaders/prowizard/ac1d.c in Sources */,
+				BB000000166 /* libxmp/loaders/prowizard/di.c in Sources */,
+				BB000000168 /* libxmp/loaders/prowizard/eureka.c in Sources */,
+				BB000000170 /* libxmp/loaders/prowizard/fc-m.c in Sources */,
+				BB000000172 /* libxmp/loaders/prowizard/fuchs.c in Sources */,
+				BB000000174 /* libxmp/loaders/prowizard/fuzzac.c in Sources */,
+				BB000000176 /* libxmp/loaders/prowizard/gmc.c in Sources */,
+				BB000000178 /* libxmp/loaders/prowizard/heatseek.c in Sources */,
+				BB000000180 /* libxmp/loaders/prowizard/hrt.c in Sources */,
+				BB000000182 /* libxmp/loaders/prowizard/ksm.c in Sources */,
+				BB000000184 /* libxmp/loaders/prowizard/mp.c in Sources */,
+				BB000000186 /* libxmp/loaders/prowizard/noiserun.c in Sources */,
+				BB000000188 /* libxmp/loaders/prowizard/novotrade.c in Sources */,
+				BB000000190 /* libxmp/loaders/prowizard/np1.c in Sources */,
+				BB000000192 /* libxmp/loaders/prowizard/np2.c in Sources */,
+				BB000000194 /* libxmp/loaders/prowizard/np3.c in Sources */,
+				BB000000196 /* libxmp/loaders/prowizard/p40.c in Sources */,
+				BB000000198 /* libxmp/loaders/prowizard/p61a.c in Sources */,
+				BB000000200 /* libxmp/loaders/prowizard/pha.c in Sources */,
+				BB000000202 /* libxmp/loaders/prowizard/pm01.c in Sources */,
+				BB000000204 /* libxmp/loaders/prowizard/pm10c.c in Sources */,
+				BB000000206 /* libxmp/loaders/prowizard/pm18a.c in Sources */,
+				BB000000208 /* libxmp/loaders/prowizard/pp10.c in Sources */,
+				BB000000210 /* libxmp/loaders/prowizard/pp21.c in Sources */,
+				BB000000212 /* libxmp/loaders/prowizard/prowiz.c in Sources */,
+				BB000000214 /* libxmp/loaders/prowizard/prun1.c in Sources */,
+				BB000000216 /* libxmp/loaders/prowizard/prun2.c in Sources */,
+				BB000000218 /* libxmp/loaders/prowizard/ptktable.c in Sources */,
+				BB000000220 /* libxmp/loaders/prowizard/skyt.c in Sources */,
+				BB000000222 /* libxmp/loaders/prowizard/starpack.c in Sources */,
+				BB000000224 /* libxmp/loaders/prowizard/tdd.c in Sources */,
+				BB000000226 /* libxmp/loaders/prowizard/theplayer.c in Sources */,
+				BB000000228 /* libxmp/loaders/prowizard/titanics.c in Sources */,
+				BB000000230 /* libxmp/loaders/prowizard/tp1.c in Sources */,
+				BB000000232 /* libxmp/loaders/prowizard/tp3.c in Sources */,
+				BB000000234 /* libxmp/loaders/prowizard/tuning.c in Sources */,
+				BB000000236 /* libxmp/loaders/prowizard/unic.c in Sources */,
+				BB000000238 /* libxmp/loaders/prowizard/unic2.c in Sources */,
+				BB000000240 /* libxmp/loaders/prowizard/wn.c in Sources */,
+				BB000000242 /* libxmp/loaders/prowizard/xann.c in Sources */,
+				BB000000244 /* libxmp/loaders/prowizard/zen.c in Sources */,
+				BB000000246 /* libxmp/loaders/pt3_load.c in Sources */,
+				BB000000248 /* libxmp/loaders/ptm_load.c in Sources */,
+				BB000000250 /* libxmp/loaders/pw_load.c in Sources */,
+				BB000000252 /* libxmp/loaders/rtm_load.c in Sources */,
+				BB000000254 /* libxmp/loaders/s3m_load.c in Sources */,
+				BB000000256 /* libxmp/loaders/sample.c in Sources */,
+				BB000000258 /* libxmp/loaders/sfx_load.c in Sources */,
+				BB000000260 /* libxmp/loaders/st_load.c in Sources */,
+				BB000000262 /* libxmp/loaders/stim_load.c in Sources */,
+				BB000000264 /* libxmp/loaders/stm_load.c in Sources */,
+				BB000000266 /* libxmp/loaders/stx_load.c in Sources */,
+				BB000000268 /* libxmp/loaders/sym_load.c in Sources */,
+				BB000000270 /* libxmp/loaders/ult_load.c in Sources */,
+				BB000000272 /* libxmp/loaders/umx_load.c in Sources */,
+				BB000000274 /* libxmp/loaders/voltable.c in Sources */,
+				BB000000276 /* libxmp/loaders/vorbis.c in Sources */,
+				BB000000278 /* libxmp/loaders/xm_load.c in Sources */,
+				BB000000280 /* libxmp/loaders/xmf_load.c in Sources */,
+				BB000000282 /* libxmp/md5.c in Sources */,
+				BB000000284 /* libxmp/med_extras.c in Sources */,
+				BB000000286 /* libxmp/memio.c in Sources */,
+				BB000000288 /* libxmp/miniz_tinfl.c in Sources */,
+				BB000000290 /* libxmp/misc.c in Sources */,
+				BB000000292 /* libxmp/mix_all.c in Sources */,
+				BB000000294 /* libxmp/mix_paula.c in Sources */,
+				BB000000296 /* libxmp/mixer.c in Sources */,
+				BB000000298 /* libxmp/mkstemp.c in Sources */,
+				BB000000300 /* libxmp/period.c in Sources */,
+				BB000000302 /* libxmp/player.c in Sources */,
+				BB000000304 /* libxmp/read_event.c in Sources */,
+				BB000000306 /* libxmp/scan.c in Sources */,
+				BB000000308 /* libxmp/smix.c in Sources */,
+				BB000000310 /* libxmp/tempfile.c in Sources */,
+				BB000000312 /* libxmp/virtual.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -643,6 +1304,10 @@
 					"$(SRCROOT)/TERMinator/Bridge/uifc",
 					"$(SRCROOT)/TERMinator/Bridge/conio",
 					"$(SRCROOT)/TERMinator/Bridge/sbbs3",
+					"$(SRCROOT)/TERMinator/Bridge/libxmp",
+					"$(SRCROOT)/TERMinator/Bridge/libxmp/loaders",
+					"$(SRCROOT)/TERMinator/Bridge/libxmp/depackers",
+					"$(SRCROOT)/TERMinator/Bridge/libxmp/loaders/prowizard",
 					"$(SRCROOT)/../src/conio",
 					"$(SRCROOT)/../src/syncterm",
 					"$(SRCROOT)/../src/sbbs3",
@@ -660,7 +1325,7 @@
 					"$(inherited)",
 					"$(SRCROOT)/TERMinator/Bridge/cryptlib/$(CRYPTLIB_PLATFORM)",
 				);
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.8;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.JSONbourne.TERMinator-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -693,6 +1358,10 @@
 					"$(SRCROOT)/TERMinator/Bridge/uifc",
 					"$(SRCROOT)/TERMinator/Bridge/conio",
 					"$(SRCROOT)/TERMinator/Bridge/sbbs3",
+					"$(SRCROOT)/TERMinator/Bridge/libxmp",
+					"$(SRCROOT)/TERMinator/Bridge/libxmp/loaders",
+					"$(SRCROOT)/TERMinator/Bridge/libxmp/depackers",
+					"$(SRCROOT)/TERMinator/Bridge/libxmp/loaders/prowizard",
 					"$(SRCROOT)/../src/conio",
 					"$(SRCROOT)/../src/syncterm",
 					"$(SRCROOT)/../src/sbbs3",
@@ -710,7 +1379,7 @@
 					"$(inherited)",
 					"$(SRCROOT)/TERMinator/Bridge/cryptlib/$(CRYPTLIB_PLATFORM)",
 				);
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.8;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.JSONbourne.TERMinator-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -743,6 +1412,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F93634C52F4E654300FAFCC4 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F93634C62F4E654300FAFCC4 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F93634C52F4E654300FAFCC4 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		F93634C82F4E654300FAFCC4 /* FirebaseDatabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F93634C52F4E654300FAFCC4 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = AA500000000 /* Project object */;
 }

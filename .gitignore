@@ -18,3 +18,10 @@ xcuserdata/
 # CocoaPods / SPM
 Pods/
 .build/
+
+# Firebase credentials
+GoogleService-Info.plist
+GoogleService-Info*.plist
+
+# Temp files
+*.tmp.*

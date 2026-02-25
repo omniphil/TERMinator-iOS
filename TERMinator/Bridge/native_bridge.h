@@ -130,6 +130,11 @@ void native_get_cursor_pos(int32_t *x, int32_t *y);
 bool native_is_cursor_visible(void);
 
 /**
+ * Check if BBS explicitly changed cursor type (read and clear).
+ */
+bool native_cursor_type_changed(void);
+
+/**
  * Check if the screen has changed since last render.
  */
 bool native_is_screen_dirty(void);
@@ -383,6 +388,56 @@ void native_set_logging_enabled(bool enabled);
  * @return Pointer to log buffer (do not free)
  */
 const uint8_t* native_get_logged_data(int32_t *count);
+
+// ============================================================================
+// MARK: - Audio Command (OSC 800 / TAP)
+// ============================================================================
+
+/**
+ * Check if an audio command is pending (lockless volatile read).
+ */
+bool native_check_audio_command(void);
+
+/**
+ * Get the pending audio command string and clear the flag.
+ * @return Pointer to command string (static buffer, do not free), or NULL
+ */
+const char* native_get_audio_command(void);
+
+// ============================================================================
+// MARK: - MOD Player (libxmp)
+// ============================================================================
+
+/**
+ * Load a tracker module file and start the player.
+ * @param filePath Path to MOD/S3M/XM/IT file
+ * @return true on success
+ */
+bool native_mod_load(const char *filePath);
+
+/**
+ * Render PCM frames from the loaded module.
+ * Output: interleaved 16-bit stereo samples.
+ * @param buffer Output buffer for PCM data
+ * @param frames Number of frames to render
+ * @return Frames rendered, or -1 on end/error
+ */
+int32_t native_mod_get_pcm(int16_t *buffer, int32_t frames);
+
+/**
+ * Stop and release the current module.
+ */
+void native_mod_stop(void);
+
+/**
+ * Set MOD playback volume (0.0 - 1.0).
+ */
+void native_mod_set_volume(float volume);
+
+/**
+ * Check if a module is currently playing.
+ */
+bool native_mod_is_playing(void);
 
 // ============================================================================
 // MARK: - Fast Terminal Rendering

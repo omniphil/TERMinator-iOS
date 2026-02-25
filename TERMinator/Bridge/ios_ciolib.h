@@ -33,6 +33,7 @@ void ios_ciolib_resize(int width, int height);
 int ios_ciolib_get_cursor_x(void);
 int ios_ciolib_get_cursor_y(void);
 bool ios_ciolib_is_cursor_visible(void);
+bool ios_ciolib_cursor_type_changed(void);
 
 // Dirty tracking
 bool ios_ciolib_is_dirty(void);

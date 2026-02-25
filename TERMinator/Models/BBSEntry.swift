@@ -4,10 +4,12 @@ import Foundation
 enum ScreenMode: Int, CaseIterable, Codable, Identifiable {
     case mode80x25 = 0
     case mode80x30 = 1
-    case mode80x40 = 5
     case mode80x50 = 2
     case mode132x25 = 3
     case mode132x50 = 4
+    case mode80x40 = 5
+    case mode132x30 = 6
+    case mode132x40 = 7
 
     var id: Int { rawValue }
 
@@ -18,6 +20,8 @@ enum ScreenMode: Int, CaseIterable, Codable, Identifiable {
         case .mode80x40: return "80x40"
         case .mode80x50: return "80x50"
         case .mode132x25: return "132x25"
+        case .mode132x30: return "132x30"
+        case .mode132x40: return "132x40"
         case .mode132x50: return "132x50"
         }
     }
@@ -25,15 +29,15 @@ enum ScreenMode: Int, CaseIterable, Codable, Identifiable {
     var columns: Int {
         switch self {
         case .mode80x25, .mode80x30, .mode80x40, .mode80x50: return 80
-        case .mode132x25, .mode132x50: return 132
+        case .mode132x25, .mode132x30, .mode132x40, .mode132x50: return 132
         }
     }
 
     var rows: Int {
         switch self {
         case .mode80x25, .mode132x25: return 25
-        case .mode80x30: return 30
-        case .mode80x40: return 40
+        case .mode80x30, .mode132x30: return 30
+        case .mode80x40, .mode132x40: return 40
         case .mode80x50, .mode132x50: return 50
         }
     }
@@ -116,6 +120,7 @@ struct BBSEntry: Identifiable, Codable, Hashable {
     var font: TerminalFont
     var zoomLevel: Int  // 25-200%
     var showStatusBar: Bool
+    var showButtonBar: Bool
     var autoConnect: Bool
     var snapshotData: Data?  // Thumbnail/snapshot image data
     var createdAt: Date
@@ -134,6 +139,7 @@ struct BBSEntry: Identifiable, Codable, Hashable {
         font: TerminalFont = .cp437,
         zoomLevel: Int = 100,
         showStatusBar: Bool = true,
+        showButtonBar: Bool = true,
         autoConnect: Bool = false,
         snapshotData: Data? = nil,
         createdAt: Date = Date(),
@@ -149,6 +155,7 @@ struct BBSEntry: Identifiable, Codable, Hashable {
         self.font = font
         self.zoomLevel = zoomLevel.clamped(to: 25...200)
         self.showStatusBar = showStatusBar
+        self.showButtonBar = showButtonBar
         self.autoConnect = autoConnect
         self.snapshotData = snapshotData
         self.createdAt = createdAt
@@ -169,6 +176,7 @@ struct BBSEntry: Identifiable, Codable, Hashable {
         font = try container.decode(TerminalFont.self, forKey: .font)
         zoomLevel = (try container.decodeIfPresent(Int.self, forKey: .zoomLevel) ?? 100).clamped(to: 25...200)
         showStatusBar = try container.decodeIfPresent(Bool.self, forKey: .showStatusBar) ?? true
+        showButtonBar = try container.decodeIfPresent(Bool.self, forKey: .showButtonBar) ?? true
         autoConnect = try container.decodeIfPresent(Bool.self, forKey: .autoConnect) ?? false
         snapshotData = try container.decodeIfPresent(Data.self, forKey: .snapshotData)
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
@@ -313,7 +321,7 @@ class BBSEntryStore: ObservableObject {
 
     /// All default BBSes with their configuration and bundle snapshot resource names.
     private static let allDefaults: [(name: String, host: String, port: Int, screenMode: ScreenMode, font: TerminalFont, id: UUID?, snapshotResource: String?)] = [
-        ("aBSiNTHE BBS", "absinthebbs.net", 1940, .mode80x40, .topazPlus, nil, "snapshot_absinthe"),
+        ("aBSiNTHE BBS", "absinthebbs.net", 1940, .mode80x50, .topazPlus, nil, "snapshot_absinthe"),
         ("Dead Modem Society", "telnet.deadmodemsociety.com", 1337, .mode80x25, .cp437, deadModemSocietyUUID, "snapshot_deadmodem"),
         ("20 For Beers", "20forbeers.com", 1337, .mode80x25, .cp437, nil, "snapshot_20forbeers"),
         ("The Bottomless Abyss", "bbs.bottomlessabyss.net", 2023, .mode80x25, .cp437, nil, "snapshot_bottomlessabyss"),
@@ -325,7 +333,7 @@ class BBSEntryStore: ObservableObject {
         ("Distortion", "d1st.org", 23, .mode80x25, .cp437, nil, "snapshot_distortion"),
     ]
 
-    private static let currentDefaultsVersion = 3
+    private static let currentDefaultsVersion = 7
 
     /// Add default BBS connections on fresh install.
     private func addDefaultEntries() {
@@ -355,8 +363,40 @@ class BBSEntryStore: ObservableObject {
         let version = UserDefaults.standard.integer(forKey: "defaults_version")
         if version >= BBSEntryStore.currentDefaultsVersion { return }
 
+        var changed = false
+
+        // Version 4: Update aBSiNTHE BBS to 80x50 screen mode
+        if version < 4 {
+            for i in entries.indices {
+                if entries[i].host == "absinthebbs.net" && entries[i].port == 1940 {
+                    if entries[i].screenMode != .mode80x50 {
+                        entries[i].screenMode = .mode80x50
+                        changed = true
+                    }
+                }
+            }
+        }
+
+        // Version 5: Refresh default BBS snapshots with updated artwork
+        if version >= 1 && version < 5 {
+            refreshDefaultSnapshots()
+            changed = true
+        }
+
+        // Version 6: Refresh 20 For Beers snapshot with updated artwork
+        if version >= 5 && version < 6 {
+            refreshDefaultSnapshots()
+            changed = true
+        }
+
+        // Version 7: Refresh 20 For Beers snapshot with new artwork
+        if version >= 6 && version < 7 {
+            refreshDefaultSnapshots()
+            changed = true
+        }
+
+        // Add any new default BBSes (skipping duplicates)
         let existing = Set(entries.map { "\($0.host):\($0.port)" })
-        var added = 0
 
         for def in BBSEntryStore.allDefaults {
             let key = "\(def.host):\(def.port)"
@@ -378,12 +418,34 @@ class BBSEntryStore: ObservableObject {
                 snapshotData: snapshot
             )
             entries.append(entry)
-            added += 1
+            changed = true
         }
 
         UserDefaults.standard.set(BBSEntryStore.currentDefaultsVersion, forKey: "defaults_version")
-        if added > 0 {
+        if changed {
             saveEntries()
+        }
+    }
+
+    /// Force-refresh snapshot images for all default BBSes from bundled assets.
+    private func refreshDefaultSnapshots() {
+        let snapshotMap: [String: String] = [
+            "absinthebbs.net": "snapshot_absinthe",
+            "telnet.deadmodemsociety.com": "snapshot_deadmodem",
+            "20forbeers.com": "snapshot_20forbeers",
+            "bbs.bottomlessabyss.net": "snapshot_bottomlessabyss",
+            "sbbs.dmine.net": "snapshot_diamondmine",
+            "bbs.erb.pw": "snapshot_quantumwormhole",
+            "dura-bbs.net": "snapshot_duraeuropos",
+            "wizardsrainbow.com": "snapshot_wizardsrainbow",
+            "xibalba.l33t.codes": "snapshot_xibalba",
+            "d1st.org": "snapshot_distortion"
+        ]
+        for i in entries.indices {
+            guard let resource = snapshotMap[entries[i].host],
+                  let url = Bundle.main.url(forResource: resource, withExtension: "png"),
+                  let data = try? Data(contentsOf: url) else { continue }
+            entries[i].snapshotData = data
         }
     }
 
