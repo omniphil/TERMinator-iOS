@@ -4,11 +4,17 @@ import os.log
 
 private let logger = Logger(subsystem: "com.jsonbourne.TERMinator", category: "Soundtrack")
 
-/// Manages BBS soundtrack playback via OSC 800 (TAP) protocol.
+/// Manages BBS soundtrack playback via OSC 800 / TAP+ protocol.
 ///
-/// Handles downloading, caching, and playing audio files (MP3/WAV/OGG)
-/// triggered by escape sequences from the BBS. MOD/S3M/XM/IT tracker
-/// formats are delegated to ModPlayer.
+/// TAP+ extensions:
+///   - 4 audio channels (0-3) for simultaneous playback
+///   - Seek to absolute position in current track
+///   - Channel 0 supports all formats (tracker + streaming)
+///   - Channels 1-3 support streaming formats only (MP3/WAV/OGG)
+///   - Video/image file caching for TAP+ multimedia commands
+///
+/// Commands not handled here (visualizer, images, video) return false
+/// so TerminalViewModel can route them to handleTapPlusCommand().
 class SoundtrackManager: ObservableObject {
 
     static let shared = SoundtrackManager()
@@ -18,13 +24,21 @@ class SoundtrackManager: ObservableObject {
     private static let cacheDirName = "soundtracks"
     private static let maxURLLength = 2048
     private static let maxFilenameLength = 128
-    private static let maxFileSize: Int64 = 10 * 1024 * 1024  // 10MB per file
-    private static let defaultCacheLimitMB = 50
+    private static let maxFileSize: Int64 = 50 * 1024 * 1024  // 50MB per file (video support)
+    private static let defaultCacheLimitMB = 100
     private static let downloadTimeoutSeconds: TimeInterval = 15
+    private static let masterGain: Float = 0.85
+    private static let numChannels = 4
 
-    private static let allowedExtensions: Set<String> = ["mp3", "wav", "ogg", "mod", "s3m", "xm", "it"]
+    private static let videoExtensions: Set<String> = ["mp4", "m4v", "webm"]
+    private static let imageExtensions: Set<String> = ["jpg", "jpeg", "png", "gif", "webp"]
+    private static let allowedExtensions: Set<String> = [
+        "mp3", "wav", "ogg", "mod", "s3m", "xm", "it",
+        "mp4", "m4v", "webm",
+        "jpg", "jpeg", "png", "gif", "webp"
+    ]
     private static let trackerExtensions: Set<String> = ["mod", "s3m", "xm", "it"]
-    private static let filenamePattern = try! NSRegularExpression(pattern: "^[a-zA-Z0-9._-]+$")
+    private static let filenamePattern = try! NSRegularExpression(pattern: "^[a-zA-Z0-9._ -]+$")
 
     // Settings keys
     static let keySoundtrackEnabled = "soundtrack_enabled"
@@ -35,15 +49,66 @@ class SoundtrackManager: ObservableObject {
 
     @Published var cacheSize: Int64 = 0
 
+    // MARK: - Audio Analyzer
+
+    let audioAnalyzer = AudioAnalyzer()
+
+    // MARK: - Per-Channel State
+
+    private struct QueuedTrack {
+        let filename: String
+        let delaySec: Int
+    }
+
+    private class AudioChannel {
+        let index: Int
+        // Engine-based streaming playback (with PCM tap for visualizer)
+        var audioEngine: AVAudioEngine?
+        var playerNode: AVAudioPlayerNode?
+        var audioFile: AVAudioFile?
+        var looping: Bool = false
+        // Tracker playback
+        var modPlayer: ModPlayer?
+        var volume: Float = 1.0
+        var fadeTimer: Timer?
+        var playing = false
+        var currentFilename: String?
+
+        // Queue for auto-advance playback
+        var queue: [QueuedTrack] = []
+        var queueIndex: Int = 0
+        var queueTimer: DispatchWorkItem?
+
+        init(index: Int) {
+            self.index = index
+        }
+
+        func stopInternal() {
+            playerNode?.stop()
+            if let engine = audioEngine {
+                engine.mainMixerNode.removeTap(onBus: 0)
+                engine.stop()
+                if let node = playerNode {
+                    engine.detach(node)
+                }
+            }
+            audioEngine = nil
+            playerNode = nil
+            audioFile = nil
+            looping = false
+
+            modPlayer?.stop()
+            modPlayer = nil
+
+            playing = false
+            currentFilename = nil
+        }
+    }
+
     // MARK: - Private State
 
     private let cacheDir: URL
-    private var audioPlayer: AVAudioPlayer?
-    private var modPlayer: ModPlayer?
-    private var currentVolume: Float = 0.7
-    private var fadeTimer: Timer?
-    private var playing = false
-    private var currentFilename: String?
+    private var channels: [AudioChannel] = []
     private let downloadSession: URLSession
 
     // Maps TAP display names to actual cached filenames (e.g. "Axel F" -> "AxelF.mod")
@@ -61,6 +126,10 @@ class SoundtrackManager: ObservableObject {
         config.timeoutIntervalForResource = SoundtrackManager.downloadTimeoutSeconds * 2
         downloadSession = URLSession(configuration: config)
 
+        for i in 0..<SoundtrackManager.numChannels {
+            channels.append(AudioChannel(index: i))
+        }
+
         // Register defaults so values are correct before user visits Settings
         UserDefaults.standard.register(defaults: [
             SoundtrackManager.keySoundtrackEnabled: true,
@@ -75,12 +144,14 @@ class SoundtrackManager: ObservableObject {
     // MARK: - Command Handling
 
     /// Parse and execute an OSC 800 command string.
-    /// Format: "command;param1;param2;..."
-    func handleCommand(_ cmd: String) {
-        guard isEnabled() else { return }
+    /// Returns true if the command was handled, false if it should be
+    /// routed elsewhere (e.g. visualizer, image commands).
+    @discardableResult
+    func handleCommand(_ cmd: String) -> Bool {
+        guard isEnabled() else { return true }
 
         let parts = cmd.components(separatedBy: ";")
-        guard !parts.isEmpty else { return }
+        guard !parts.isEmpty else { return true }
 
         switch parts[0].lowercased() {
         case "cache":
@@ -90,25 +161,74 @@ class SoundtrackManager: ObservableObject {
         case "play":
             if parts.count >= 2 {
                 let loop = parts.count >= 3 && parts[2] == "1"
-                play(filename: parts[1], loop: loop)
+                let channel = parts.count >= 4 ? (Int(parts[3]) ?? 0) : 0
+                // Explicit play clears any existing queue
+                if let ch = getChannel(channel) {
+                    ch.queue.removeAll()
+                    ch.queueIndex = 0
+                    ch.queueTimer?.cancel()
+                    ch.queueTimer = nil
+                }
+                play(filename: parts[1], loop: loop, channelIdx: channel)
+            }
+        case "queue":
+            // queue;filename;channel;delay_seconds
+            if parts.count >= 4 {
+                let channel = Int(parts[2]) ?? 0
+                let delay = max(0, Int(parts[3]) ?? 3)
+                if let ch = getChannel(channel) {
+                    ch.queue.append(QueuedTrack(filename: parts[1], delaySec: delay))
+                    logger.info("Queued '\(parts[1])' on ch\(channel) (delay=\(delay)s, queue=\(ch.queue.count))")
+                }
             }
         case "stop":
-            stop()
+            let channel = parts.count >= 2 ? Int(parts[1]) : nil
+            if let channel = channel {
+                stopChannel(channel)
+            } else {
+                stopAll()
+            }
         case "pause":
-            pause()
+            let channel = parts.count >= 2 ? Int(parts[1]) : nil
+            if let channel = channel {
+                pauseChannel(channel)
+            } else {
+                for ch in channels { pauseChannel(ch.index) }
+            }
         case "resume":
-            resume()
+            let channel = parts.count >= 2 ? Int(parts[1]) : nil
+            if let channel = channel {
+                resumeChannel(channel)
+            } else {
+                for ch in channels { resumeChannel(ch.index) }
+            }
         case "volume":
             if parts.count >= 2, let vol = Int(parts[1]) {
-                setVolume(vol)
+                let channel = parts.count >= 3 ? Int(parts[2]) : nil
+                if let channel = channel {
+                    setVolume(vol, channelIdx: channel)
+                } else {
+                    for ch in channels { setVolume(vol, channelIdx: ch.index) }
+                }
             }
         case "fade":
             if parts.count >= 3, let targetVol = Int(parts[1]), let durationMs = Int(parts[2]) {
-                fade(targetVolPercent: targetVol, durationMs: durationMs)
+                let channel = parts.count >= 4 ? Int(parts[3]) : nil
+                if let channel = channel {
+                    fade(targetVolPercent: targetVol, durationMs: durationMs, channelIdx: channel)
+                } else {
+                    for ch in channels { fade(targetVolPercent: targetVol, durationMs: durationMs, channelIdx: ch.index) }
+                }
+            }
+        case "seek":
+            if parts.count >= 2, let posMs = Int(parts[1]) {
+                let channel = parts.count >= 3 ? (Int(parts[2]) ?? 0) : 0
+                seek(positionMs: posMs, channelIdx: channel)
             }
         default:
-            logger.warning("Unknown audio command: \(parts[0])")
+            return false  // Not an audio command — route to TAP+ handler
         }
+        return true
     }
 
     // MARK: - Download & Cache
@@ -119,7 +239,6 @@ class SoundtrackManager: ObservableObject {
             return
         }
 
-        // Extract the real filename from the URL (e.g. "AxelF.mod" from ".../AxelF.mod")
         guard let url = URL(string: urlString) else { return }
         let realFilename = url.lastPathComponent
 
@@ -128,7 +247,6 @@ class SoundtrackManager: ObservableObject {
             return
         }
 
-        // Map the display name to the real cached filename
         if !displayName.isEmpty {
             displayNameMap[displayName] = safeFilename
         }
@@ -146,13 +264,11 @@ class SoundtrackManager: ObservableObject {
                 return
             }
 
-            // Check response
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
                 logger.warning("Download failed: HTTP \(httpResponse.statusCode)")
                 return
             }
 
-            // Check file size
             if let attrs = try? FileManager.default.attributesOfItem(atPath: tempURL.path),
                let fileSize = attrs[.size] as? Int64,
                fileSize > SoundtrackManager.maxFileSize {
@@ -160,7 +276,6 @@ class SoundtrackManager: ObservableObject {
                 return
             }
 
-            // Move to cache
             do {
                 try FileManager.default.moveItem(at: tempURL, to: targetFile)
                 logger.info("Cached: \(safeFilename)")
@@ -177,8 +292,9 @@ class SoundtrackManager: ObservableObject {
 
     // MARK: - Playback
 
-    private func play(filename: String, loop: Bool) {
-        // First try the display name map (TAP sends display names like "Axel F")
+    private func play(filename: String, loop: Bool, channelIdx: Int) {
+        guard let ch = getChannel(channelIdx) else { return }
+
         let resolved = displayNameMap[filename]
         if let resolved = resolved {
             logger.info("Resolved display name '\(filename)' -> '\(resolved)'")
@@ -186,7 +302,6 @@ class SoundtrackManager: ObservableObject {
 
         var safeFilename = sanitizeFilename(resolved ?? filename)
         if safeFilename == nil {
-            // Last resort — search cache for a matching file by base name
             safeFilename = findCachedFile(baseName: filename)
             if safeFilename == nil {
                 logger.warning("No cached file found for: \(filename)")
@@ -196,19 +311,19 @@ class SoundtrackManager: ObservableObject {
 
         let file = cacheDir.appendingPathComponent(safeFilename!)
 
-        // If file doesn't exist yet, it may still be downloading - wait briefly
         if !FileManager.default.fileExists(atPath: file.path) {
             logger.info("File not cached yet, waiting: \(safeFilename!)")
             let waitFilename = safeFilename!
+            let waitChannel = channelIdx
             DispatchQueue.global().async { [weak self] in
-                for i in 0..<40 { // Up to 10 seconds (40 * 250ms)
+                for i in 0..<40 {
                     Thread.sleep(forTimeInterval: 0.25)
                     guard let self = self else { return }
                     let waitFile = self.cacheDir.appendingPathComponent(waitFilename)
                     if FileManager.default.fileExists(atPath: waitFile.path) {
                         logger.info("File ready after \((i + 1) * 250)ms: \(waitFilename)")
                         DispatchQueue.main.async {
-                            self.playInternal(file: waitFile, safeFilename: waitFilename, loop: loop)
+                            self.playInternal(file: waitFile, safeFilename: waitFilename, loop: loop, channelIdx: waitChannel)
                         }
                         return
                     }
@@ -218,10 +333,9 @@ class SoundtrackManager: ObservableObject {
             return
         }
 
-        playInternal(file: file, safeFilename: safeFilename!, loop: loop)
+        playInternal(file: file, safeFilename: safeFilename!, loop: loop, channelIdx: channelIdx)
     }
 
-    /// Search the cache for a file matching the base name with any allowed extension.
     private func findCachedFile(baseName: String) -> String? {
         guard !baseName.isEmpty, baseName.count <= SoundtrackManager.maxFilenameLength else { return nil }
         for ext in SoundtrackManager.allowedExtensions {
@@ -236,41 +350,94 @@ class SoundtrackManager: ObservableObject {
         return nil
     }
 
-    private func playInternal(file: URL, safeFilename: String, loop: Bool) {
-        // Stop any current playback
-        stopInternal()
+    private func playInternal(file: URL, safeFilename: String, loop: Bool, channelIdx: Int) {
+        guard let ch = getChannel(channelIdx) else { return }
+
+        ch.fadeTimer?.invalidate()
+        ch.fadeTimer = nil
+        ch.stopInternal()
 
         let ext = (safeFilename as NSString).pathExtension.lowercased()
         if SoundtrackManager.trackerExtensions.contains(ext) {
-            playTracker(file: file, loop: loop)
+            if channelIdx != 0 {
+                logger.warning("Tracker formats only supported on channel 0, redirecting")
+                playInternal(file: file, safeFilename: safeFilename, loop: loop, channelIdx: 0)
+                return
+            }
+            playTracker(ch: ch, file: file, loop: loop)
         } else {
-            playAudioPlayer(file: file, loop: loop)
+            playAudioPlayer(ch: ch, file: file, loop: loop)
         }
 
-        currentFilename = safeFilename
-        playing = true
+        ch.currentFilename = safeFilename
+        ch.playing = true
     }
 
-    private func playAudioPlayer(file: URL, loop: Bool) {
+    private func playAudioPlayer(ch: AudioChannel, file: URL, loop: Bool) {
         do {
-            // Configure audio session for playback
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .mixWithOthers)
             try AVAudioSession.sharedInstance().setActive(true)
 
-            let player = try AVAudioPlayer(contentsOf: file)
-            player.numberOfLoops = loop ? -1 : 0
-            player.volume = currentVolume
-            player.prepareToPlay()
-            player.play()
-            audioPlayer = player
-            logger.info("Playing: \(file.lastPathComponent) (loop=\(loop))")
+            let audioFile = try AVAudioFile(forReading: file)
+            let engine = AVAudioEngine()
+            let playerNode = AVAudioPlayerNode()
+
+            engine.attach(playerNode)
+            engine.connect(playerNode, to: engine.mainMixerNode, format: audioFile.processingFormat)
+
+            // Install PCM tap for visualizer (any channel feeds the analyzer)
+            let tapFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100, channels: 2, interleaved: false)
+            engine.mainMixerNode.installTap(onBus: 0, bufferSize: 2048, format: tapFormat) { [weak self] buffer, _ in
+                guard let self = self else { return }
+                let frameCount = Int(buffer.frameLength)
+                guard let channelData = buffer.floatChannelData, buffer.format.channelCount >= 1 else { return }
+
+                var pcmBuffer = [Int16](repeating: 0, count: frameCount * 2)
+                let ch0 = channelData[0]
+                let ch1 = buffer.format.channelCount >= 2 ? channelData[1] : channelData[0]
+                for i in 0..<frameCount {
+                    pcmBuffer[i * 2] = Int16(max(-1, min(1, ch0[i])) * 32767)
+                    pcmBuffer[i * 2 + 1] = Int16(max(-1, min(1, ch1[i])) * 32767)
+                }
+                self.audioAnalyzer.feedPcm(buffer: pcmBuffer, frames: frameCount)
+            }
+
+            try engine.start()
+
+            ch.audioEngine = engine
+            ch.playerNode = playerNode
+            ch.audioFile = audioFile
+            ch.looping = loop
+
+            scheduleStreamingFile(ch: ch)
+            playerNode.play()
+            playerNode.volume = toPerceptualVolume(ch.volume)
+
+            logger.info("Ch\(ch.index) playing (engine): \(file.lastPathComponent) (loop=\(loop))")
         } catch {
-            logger.error("AVAudioPlayer play error: \(error.localizedDescription)")
-            audioPlayer = nil
+            logger.error("Ch\(ch.index) engine play error: \(error.localizedDescription)")
         }
     }
 
-    private func playTracker(file: URL, loop: Bool) {
+    private func scheduleStreamingFile(ch: AudioChannel) {
+        guard let playerNode = ch.playerNode, let audioFile = ch.audioFile else { return }
+        playerNode.scheduleFile(audioFile, at: nil) { [weak self] in
+            guard let self = self else { return }
+            if ch.looping && ch.playing {
+                audioFile.framePosition = 0
+                self.scheduleStreamingFile(ch: ch)
+            } else if ch.playing {
+                // Playback ended naturally — auto-advance from queue
+                DispatchQueue.main.async {
+                    ch.playing = false
+                    ch.currentFilename = nil
+                    self.playNextFromQueue(ch.index)
+                }
+            }
+        }
+    }
+
+    private func playTracker(ch: AudioChannel, file: URL, loop: Bool) {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .mixWithOthers)
             try AVAudioSession.sharedInstance().setActive(true)
@@ -283,70 +450,128 @@ class SoundtrackManager: ObservableObject {
             logger.error("ModPlayer load failed: \(file.lastPathComponent)")
             return
         }
-        player.setVolume(currentVolume)
+        player.setVolume(toPerceptualVolume(ch.volume))
         player.setLooping(loop)
+
+        // Feed PCM to the audio analyzer for visualizer
+        player.pcmListener = { [weak self] buffer, frames in
+            self?.audioAnalyzer.feedPcm(buffer: buffer, frames: frames)
+        }
+
+        player.onCompletion = { [weak self] in
+            guard let self = self else { return }
+            ch.modPlayer = nil
+            ch.playing = false
+            ch.currentFilename = nil
+            self.playNextFromQueue(ch.index)
+        }
+
         player.start()
-        modPlayer = player
-        logger.info("Playing tracker: \(file.lastPathComponent) (loop=\(loop))")
+        ch.modPlayer = player
+        logger.info("Ch\(ch.index) playing tracker: \(file.lastPathComponent) (loop=\(loop))")
     }
 
-    // MARK: - Controls
+    /// Auto-advance to the next track in the channel's queue.
+    private func playNextFromQueue(_ channelIdx: Int) {
+        guard let ch = getChannel(channelIdx), !ch.queue.isEmpty else { return }
 
-    /// Stop all playback.
-    func stop() {
-        fadeTimer?.invalidate()
-        fadeTimer = nil
-        stopInternal()
+        let track = ch.queue[ch.queueIndex]
+        ch.queueIndex = (ch.queueIndex + 1) % ch.queue.count
+
+        logger.info("Auto-advance ch\(channelIdx) -> '\(track.filename)' in \(track.delaySec)s")
+
+        ch.queueTimer?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.play(filename: track.filename, loop: false, channelIdx: channelIdx)
+        }
+        ch.queueTimer = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + .seconds(track.delaySec),
+            execute: workItem
+        )
     }
 
-    private func stopInternal() {
-        audioPlayer?.stop()
-        audioPlayer = nil
+    // MARK: - Stop / Pause / Resume
 
-        modPlayer?.stop()
-        modPlayer = nil
-
-        playing = false
-        currentFilename = nil
+    func stopAll() {
+        for ch in channels {
+            ch.fadeTimer?.invalidate()
+            ch.fadeTimer = nil
+            ch.queue.removeAll()
+            ch.queueIndex = 0
+            ch.queueTimer?.cancel()
+            ch.queueTimer = nil
+            ch.stopInternal()
+        }
+        audioAnalyzer.reset()
     }
 
-    private func pause() {
-        audioPlayer?.pause()
-        modPlayer?.pause()
+    private func stopChannel(_ channelIdx: Int) {
+        guard let ch = getChannel(channelIdx) else { return }
+        ch.fadeTimer?.invalidate()
+        ch.fadeTimer = nil
+        ch.queue.removeAll()
+        ch.queueIndex = 0
+        ch.queueTimer?.cancel()
+        ch.queueTimer = nil
+        ch.stopInternal()
+        audioAnalyzer.reset()
     }
 
-    private func resume() {
-        audioPlayer?.play()
-        modPlayer?.resume()
+    func stop() { stopAll() }
+
+    private func pauseChannel(_ channelIdx: Int) {
+        guard let ch = getChannel(channelIdx) else { return }
+        ch.playerNode?.pause()
+        ch.audioEngine?.pause()
+        ch.modPlayer?.pause()
     }
 
-    private func setVolume(_ volumePercent: Int) {
-        let vol = Float(max(0, min(100, volumePercent))) / 100.0
-        applyVolume(vol)
+    private func resumeChannel(_ channelIdx: Int) {
+        guard let ch = getChannel(channelIdx) else { return }
+        try? ch.audioEngine?.start()
+        ch.playerNode?.play()
+        ch.modPlayer?.resume()
     }
 
-    private func applyVolume(_ vol: Float) {
-        currentVolume = max(0, min(1, vol))
-        audioPlayer?.volume = currentVolume
-        modPlayer?.setVolume(currentVolume)
+    // MARK: - Volume / Fade
+
+    private func setVolume(_ volumePercent: Int, channelIdx: Int) {
+        guard let ch = getChannel(channelIdx) else { return }
+        let clamped = max(0, min(100, volumePercent))
+        applyVolume(ch: ch, vol: Float(clamped) / 100.0)
     }
 
-    private func fade(targetVolPercent: Int, durationMs: Int) {
+    private func toPerceptualVolume(_ linear: Float) -> Float {
+        guard linear > 0 else { return 0 }
+        return min(linear * SoundtrackManager.masterGain, 1)
+    }
+
+    private func applyVolume(ch: AudioChannel, vol: Float) {
+        ch.volume = max(0, min(1, vol))
+        let amplitude = toPerceptualVolume(ch.volume)
+        ch.playerNode?.volume = amplitude
+        ch.modPlayer?.setVolume(amplitude)
+    }
+
+    private func fade(targetVolPercent: Int, durationMs: Int, channelIdx: Int) {
+        guard let ch = getChannel(channelIdx) else { return }
+
         guard durationMs > 0 else {
-            setVolume(targetVolPercent)
+            setVolume(targetVolPercent, channelIdx: channelIdx)
             return
         }
 
-        fadeTimer?.invalidate()
+        ch.fadeTimer?.invalidate()
 
         let targetVol = Float(max(0, min(100, targetVolPercent))) / 100.0
-        let startVol = currentVolume
+        let startVol = ch.volume
         let steps = max(1, min(200, durationMs / 50))
         let stepDelay = TimeInterval(durationMs) / TimeInterval(steps) / 1000.0
         let volStep = (targetVol - startVol) / Float(steps)
         var currentStep = 0
 
-        fadeTimer = Timer.scheduledTimer(withTimeInterval: stepDelay, repeats: true) { [weak self] timer in
+        ch.fadeTimer = Timer.scheduledTimer(withTimeInterval: stepDelay, repeats: true) { [weak self] timer in
             guard let self = self else {
                 timer.invalidate()
                 return
@@ -354,15 +579,70 @@ class SoundtrackManager: ObservableObject {
             currentStep += 1
             if currentStep >= steps {
                 timer.invalidate()
-                self.fadeTimer = nil
-                self.applyVolume(targetVol)
+                ch.fadeTimer = nil
+                self.applyVolume(ch: ch, vol: targetVol)
                 if targetVol <= 0 {
-                    self.stop()
+                    self.stopChannel(channelIdx)
                 }
             } else {
-                self.applyVolume(startVol + volStep * Float(currentStep))
+                self.applyVolume(ch: ch, vol: startVol + volStep * Float(currentStep))
             }
         }
+    }
+
+    // MARK: - Seek
+
+    private func seek(positionMs: Int, channelIdx: Int) {
+        guard let ch = getChannel(channelIdx), ch.playing else { return }
+
+        // Engine-based streaming seek
+        if let playerNode = ch.playerNode, let audioFile = ch.audioFile {
+            let sampleRate = audioFile.processingFormat.sampleRate
+            let targetFrame = AVAudioFramePosition(Double(positionMs) / 1000.0 * sampleRate)
+            let clampedFrame = max(0, min(targetFrame, audioFile.length))
+            let remainingFrames = AVAudioFrameCount(audioFile.length - clampedFrame)
+            guard remainingFrames > 0 else { return }
+
+            playerNode.stop()
+            audioFile.framePosition = clampedFrame
+            playerNode.scheduleSegment(audioFile, startingFrame: clampedFrame, frameCount: remainingFrames, at: nil) { [weak self] in
+                guard let self = self, ch.looping, ch.playing else { return }
+                audioFile.framePosition = 0
+                self.scheduleStreamingFile(ch: ch)
+            }
+            playerNode.play()
+        }
+
+        if ch.modPlayer != nil {
+            NativeBridge.shared.modSeek(positionMs)
+        }
+        logger.info("Ch\(channelIdx) seek to \(positionMs)ms")
+    }
+
+    // MARK: - Helpers
+
+    private func getChannel(_ index: Int) -> AudioChannel? {
+        guard index >= 0 && index < SoundtrackManager.numChannels else {
+            logger.warning("Invalid channel: \(index)")
+            return nil
+        }
+        return channels[index]
+    }
+
+    // MARK: - Public API
+
+    /// Resolve a TAP display name to a cached file URL, or nil if not found.
+    func resolveFile(displayName: String) -> URL? {
+        let resolved = displayNameMap[displayName]
+        let safeFilename: String?
+        if let resolved = resolved {
+            safeFilename = sanitizeFilename(resolved)
+        } else {
+            safeFilename = sanitizeFilename(displayName) ?? findCachedFile(baseName: displayName)
+        }
+        guard let safeFilename = safeFilename else { return nil }
+        let file = cacheDir.appendingPathComponent(safeFilename)
+        return FileManager.default.fileExists(atPath: file.path) ? file : nil
     }
 
     // MARK: - Validation
@@ -396,8 +676,10 @@ class SoundtrackManager: ObservableObject {
 
     func applySettingsVolume() {
         let vol = UserDefaults.standard.integer(forKey: SoundtrackManager.keySoundtrackVolume)
-        // Volume stored as 0-10 (slider steps), convert to 0.0-1.0
-        currentVolume = Float(max(0, min(10, vol))) / 10.0
+        let volume = Float(max(0, min(10, vol))) / 10.0
+        for ch in channels {
+            applyVolume(ch: ch, vol: volume)
+        }
     }
 
     // MARK: - Cache Management
@@ -415,7 +697,8 @@ class SoundtrackManager: ObservableObject {
 
         guard totalSize > limit else { return }
 
-        // Sort by modification date (oldest first)
+        let playingFiles = Set(channels.compactMap { $0.currentFilename })
+
         let sorted = validFiles.sorted {
             let d1 = (try? $0.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
             let d2 = (try? $1.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
@@ -424,7 +707,7 @@ class SoundtrackManager: ObservableObject {
 
         for file in sorted {
             guard totalSize > limit else { break }
-            if file.lastPathComponent == currentFilename { continue }
+            if playingFiles.contains(file.lastPathComponent) { continue }
             if let size = (try? file.resourceValues(forKeys: [.fileSizeKey]))?.fileSize {
                 try? FileManager.default.removeItem(at: file)
                 totalSize -= Int64(size)
@@ -445,7 +728,6 @@ class SoundtrackManager: ObservableObject {
         }.reduce(0, +)
     }
 
-    /// Delete all cached audio files.
     func clearCache() {
         stop()
         if let files = try? FileManager.default.contentsOfDirectory(at: cacheDir, includingPropertiesForKeys: nil) {

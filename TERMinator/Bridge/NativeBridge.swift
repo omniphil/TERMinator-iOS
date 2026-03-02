@@ -280,6 +280,39 @@ final class NativeBridge {
         return (Int(width), Int(height), data)
     }
 
+    // MARK: - Sixel Graphics
+
+    /// Check if any sixel pixel data has been written.
+    func hasSixelData() -> Bool {
+        return native_has_sixel_data()
+    }
+
+    /// Check if sixel data has been updated since last read.
+    func isSixelDirty() -> Bool {
+        return native_is_sixel_dirty()
+    }
+
+    /// Get sixel pixel buffer dimensions.
+    func getSixelDimensions() -> (width: Int, height: Int)? {
+        var width: Int32 = 0
+        var height: Int32 = 0
+        guard native_get_sixel_dimensions(&width, &height), width > 0, height > 0 else {
+            return nil
+        }
+        return (Int(width), Int(height))
+    }
+
+    /// Get sixel pixel buffer contents as UInt32 array (ARGB format).
+    func getSixelBuffer(width: Int, height: Int) -> [UInt32]? {
+        let totalPixels = width * height
+        guard totalPixels > 0, totalPixels <= 8192 * 8192 else { return nil }
+        var pixelData = [Int32](repeating: 0, count: totalPixels)
+        let written = native_get_sixel_buffer(&pixelData, Int32(totalPixels))
+        guard written > 0 else { return nil }
+        // Convert Int32 array to UInt32 array
+        return pixelData.map { UInt32(bitPattern: $0) }
+    }
+
     // MARK: - File Transfer (ZMODEM)
 
     /// Initialize the file transfer subsystem.
@@ -475,6 +508,11 @@ final class NativeBridge {
     /// Check if a module is currently playing.
     func modIsPlaying() -> Bool {
         return native_mod_is_playing()
+    }
+
+    /// Seek to a position in the current module (milliseconds).
+    func modSeek(_ positionMs: Int) {
+        native_mod_seek(Int32(positionMs))
     }
 
     // MARK: - Session Logging

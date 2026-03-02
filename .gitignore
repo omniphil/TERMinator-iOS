@@ -12,7 +12,7 @@ xcuserdata/
 *.swp
 *~
 
-# Claude Code
+# IDE / tool metadata
 .claude/
 
 # CocoaPods / SPM
@@ -22,6 +22,25 @@ Pods/
 # Firebase credentials
 GoogleService-Info.plist
 GoogleService-Info*.plist
+
+# Signing / Certificates
+*.p12
+*.cer
+*.mobileprovision
+*.certSigningRequest
+
+# Build outputs
+*.ipa
+
+# Environment
+.env
+*.env
+
+# Backup files
+*.backup
+
+# Personal files
+ReplytoApple.txt
 
 # Temp files
 *.tmp.*

@@ -993,8 +993,8 @@ struct TerminalContainerView: View {
 
     private var connectionStatusBar: some View {
         HStack(spacing: 8) {
-            // BBS name and protocol
-            Text("\(entry.name.isEmpty ? entry.host : entry.name) (\(entry.connectionProtocol.displayName))")
+            // BBS name, protocol, and version
+            Text("\(entry.name.isEmpty ? entry.host : entry.name) (\(entry.connectionProtocol.displayName)) - v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
                 .font(.system(size: 11, design: .monospaced))
                 .foregroundColor(.termLightGray)
                 .lineLimit(1)
@@ -1047,16 +1047,16 @@ struct TerminalContainerView: View {
             SpecialKeyButton(label: "ENT") {
                 sendKey(13) // Enter
             }
-            SpecialKeyButton(label: "▲", fontSize: 14) {
+            RepeatingSpecialKeyButton(label: "▲", fontSize: 14) {
                 viewModel.sendString("\u{1B}[A")
             }
-            SpecialKeyButton(label: "▼", fontSize: 14) {
+            RepeatingSpecialKeyButton(label: "▼", fontSize: 14) {
                 viewModel.sendString("\u{1B}[B")
             }
-            SpecialKeyButton(label: "◀", fontSize: 14) {
+            RepeatingSpecialKeyButton(label: "◀", fontSize: 14) {
                 viewModel.sendString("\u{1B}[D")
             }
-            SpecialKeyButton(label: "▶", fontSize: 14) {
+            RepeatingSpecialKeyButton(label: "▶", fontSize: 14) {
                 viewModel.sendString("\u{1B}[C")
             }
             SpecialKeyButton(label: "⋮", fontSize: 18) {
@@ -1131,6 +1131,44 @@ struct SpecialKeyButton: View {
                 .background(isActive ? Color.logoTermColor : Color.ctrlButtonInactive)
                 .cornerRadius(4)
         }
+    }
+}
+
+// MARK: - Repeating Special Key Button
+
+/// A button that fires immediately on press and auto-repeats at 200ms intervals while held.
+struct RepeatingSpecialKeyButton: View {
+    let label: String
+    var fontSize: CGFloat = 10
+    let action: () -> Void
+
+    @State private var timer: Timer?
+    @State private var isPressed = false
+
+    var body: some View {
+        Text(label)
+            .font(.system(size: fontSize, weight: .medium))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(isPressed ? Color.ctrlButtonInactive.opacity(0.7) : Color.ctrlButtonInactive)
+            .cornerRadius(4)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        guard !isPressed else { return }
+                        isPressed = true
+                        action()
+                        timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
+                            action()
+                        }
+                    }
+                    .onEnded { _ in
+                        isPressed = false
+                        timer?.invalidate()
+                        timer = nil
+                    }
+            )
     }
 }
 

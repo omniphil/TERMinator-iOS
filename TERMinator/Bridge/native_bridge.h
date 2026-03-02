@@ -439,6 +439,39 @@ void native_mod_set_volume(float volume);
  */
 bool native_mod_is_playing(void);
 
+/**
+ * Seek to a position in the current module (milliseconds).
+ */
+void native_mod_seek(int32_t position_ms);
+
+// ============================================================================
+// MARK: - Sixel Graphics
+// ============================================================================
+
+/**
+ * Check if any sixel pixel data has been written.
+ */
+bool native_has_sixel_data(void);
+
+/**
+ * Check if sixel pixel data has been updated since last read.
+ */
+bool native_is_sixel_dirty(void);
+
+/**
+ * Get sixel pixel buffer dimensions.
+ * @return true if there is sixel data
+ */
+bool native_get_sixel_dimensions(int32_t *width, int32_t *height);
+
+/**
+ * Get sixel pixel buffer contents.
+ * @param buffer Output buffer for pixel data (ARGB format)
+ * @param bufferLen Size of output buffer in pixels
+ * @return Number of pixels written
+ */
+int32_t native_get_sixel_buffer(int32_t *buffer, int32_t bufferLen);
+
 // ============================================================================
 // MARK: - Fast Terminal Rendering
 // ============================================================================

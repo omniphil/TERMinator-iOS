@@ -131,6 +131,15 @@ void native_mod_set_volume(float volume) {
     pthread_mutex_unlock(&g_mod_lock);
 }
 
+/* Seek to a position in the current module (milliseconds) */
+void native_mod_seek(int32_t position_ms) {
+    pthread_mutex_lock(&g_mod_lock);
+    if (g_mod_ctx != NULL && g_mod_playing) {
+        xmp_seek_time(g_mod_ctx, position_ms);
+    }
+    pthread_mutex_unlock(&g_mod_lock);
+}
+
 /* Check if a module is currently playing */
 bool native_mod_is_playing(void) {
     return g_mod_playing ? true : false;

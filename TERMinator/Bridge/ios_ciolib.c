@@ -69,7 +69,14 @@ static struct ios_screen_state {
     int dirty_min_y;
     int dirty_max_y;
     pthread_mutex_t mutex;
-    uint32_t palette[16];
+    uint32_t palette[65536];
+    // Sixel pixel framebuffer
+    uint32_t *pixel_buffer;    // ARGB framebuffer (alpha=0 transparent, 0xFF opaque)
+    int pixel_width;           // Buffer width in pixels
+    int pixel_height;          // Buffer height in pixels
+    int pixel_dirty;           // New data since last read
+    int pixel_has_data;        // ANY sixel data has been written
+    int char_pixel_height;     // Character cell height in pixels (e.g. 16 for 8x16 font)
 } ios_state = {
     .screen = NULL,
     .width = 80,
@@ -105,7 +112,14 @@ static struct ios_screen_state {
         0xFF55FF, // Light Magenta
         0xFFFF55, // Yellow
         0xFFFFFF  // White
-    }
+        /* remaining entries zero-initialized */
+    },
+    .pixel_buffer = NULL,
+    .pixel_width = 0,
+    .pixel_height = 0,
+    .pixel_dirty = 0,
+    .pixel_has_data = 0,
+    .char_pixel_height = 0
 };
 
 // Forward declarations
@@ -256,6 +270,164 @@ void ios_ciolib_unlock(void) {
 
 uint32_t* ios_ciolib_get_palette(void) {
     return ios_state.palette;
+}
+
+// ============================================================================
+// Sixel pixel framebuffer functions
+// ============================================================================
+
+// Lazy allocate/grow pixel buffer to at least w x h
+// Must be called with mutex held
+static void ensure_pixel_buffer(int w, int h) {
+    if (w <= 0 || h <= 0 || w > 8192 || h > 8192) return;
+
+    if (ios_state.pixel_buffer != NULL &&
+        ios_state.pixel_width >= w && ios_state.pixel_height >= h) {
+        return;  // Already big enough
+    }
+
+    // Need to allocate or grow
+    int new_w = (w > ios_state.pixel_width) ? w : ios_state.pixel_width;
+    int new_h = (h > ios_state.pixel_height) ? h : ios_state.pixel_height;
+
+    size_t new_size;
+    if (!safe_mult_size((size_t)new_w, (size_t)new_h, &new_size) ||
+        !safe_mult_size(new_size, sizeof(uint32_t), &new_size)) {
+        return;
+    }
+
+    uint32_t *new_buf = calloc(1, new_size);  // calloc zeros = transparent (alpha=0)
+    if (!new_buf) return;
+
+    // Copy old data if exists
+    if (ios_state.pixel_buffer != NULL) {
+        int copy_w = (ios_state.pixel_width < new_w) ? ios_state.pixel_width : new_w;
+        int copy_h = (ios_state.pixel_height < new_h) ? ios_state.pixel_height : new_h;
+        for (int y = 0; y < copy_h; y++) {
+            memcpy(new_buf + y * new_w,
+                   ios_state.pixel_buffer + y * ios_state.pixel_width,
+                   copy_w * sizeof(uint32_t));
+        }
+        free(ios_state.pixel_buffer);
+    }
+
+    ios_state.pixel_buffer = new_buf;
+    ios_state.pixel_width = new_w;
+    ios_state.pixel_height = new_h;
+}
+
+// Resolve a ciolib color value to 0xAARRGGBB
+static uint32_t resolve_pixel_color(uint32_t col) {
+    uint32_t rgb;
+    if (col & CIOLIB_COLOR_RGB) {
+        rgb = col & 0x00FFFFFF;
+    } else {
+        uint32_t idx = col & 0xFFFF;
+        if (idx < 65536) {
+            rgb = ios_state.palette[idx] & 0x00FFFFFF;
+        } else {
+            rgb = 0;
+        }
+    }
+    return 0xFF000000 | rgb;  // Fully opaque
+}
+
+// Clear pixel buffer
+void ios_ciolib_clear_pixels(void) {
+    pthread_mutex_lock(&ios_state.mutex);
+    if (ios_state.pixel_buffer != NULL) {
+        size_t buf_size;
+        if (safe_mult_size((size_t)ios_state.pixel_width, (size_t)ios_state.pixel_height, &buf_size)) {
+            memset(ios_state.pixel_buffer, 0, buf_size * sizeof(uint32_t));
+        }
+        ios_state.pixel_dirty = 1;
+        ios_state.pixel_has_data = 0;
+    }
+    pthread_mutex_unlock(&ios_state.mutex);
+}
+
+// Set the character cell pixel height (e.g. 16 for 8x16 font)
+void ios_ciolib_set_char_pixel_height(int h) {
+    ios_state.char_pixel_height = h;
+}
+
+// Sixel setpixels implementation - called from cterm.c via ciolib_setpixels()
+int ios_ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey,
+                          uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off,
+                          struct ciolib_pixels *pixels, struct ciolib_mask *mask) {
+    if (!pixels || !pixels->pixels) return 0;
+
+    pthread_mutex_lock(&ios_state.mutex);
+
+    // Ensure buffer is large enough for the target region
+    ensure_pixel_buffer((int)(ex + 1), (int)(ey + 1));
+
+    if (!ios_state.pixel_buffer) {
+        pthread_mutex_unlock(&ios_state.mutex);
+        return 0;
+    }
+
+    int buf_w = ios_state.pixel_width;
+    int buf_h = ios_state.pixel_height;
+
+    for (uint32_t dst_y = sy; dst_y <= ey; dst_y++) {
+        if ((int)dst_y >= buf_h) break;
+        uint32_t src_y = dst_y - sy + y_off;
+        if (src_y >= pixels->height) break;
+
+        for (uint32_t dst_x = sx; dst_x <= ex; dst_x++) {
+            if ((int)dst_x >= buf_w) break;
+            uint32_t src_x = dst_x - sx + x_off;
+            if (src_x >= pixels->width) break;
+
+            // Check mask
+            if (mask && mask->bits) {
+                uint32_t mask_x = dst_x - sx + mx_off;
+                uint32_t mask_y = dst_y - sy + my_off;
+                if (mask_x < mask->width && mask_y < mask->height) {
+                    uint32_t mask_byte_idx = mask_y * ((mask->width + 7) / 8) + mask_x / 8;
+                    uint8_t mask_bit = 0x80 >> (mask_x % 8);
+                    if (!(mask->bits[mask_byte_idx] & mask_bit)) {
+                        continue;  // Mask bit clear: skip this pixel
+                    }
+                }
+            }
+
+            uint32_t src_idx = src_y * pixels->width + src_x;
+            uint32_t dst_idx = dst_y * (uint32_t)buf_w + dst_x;
+            ios_state.pixel_buffer[dst_idx] = resolve_pixel_color(pixels->pixels[src_idx]);
+        }
+    }
+
+    ios_state.pixel_dirty = 1;
+    ios_state.pixel_has_data = 1;
+    pthread_mutex_unlock(&ios_state.mutex);
+    return 1;
+}
+
+// Public accessors for sixel pixel data
+int ios_ciolib_has_sixel_data(void) {
+    return ios_state.pixel_has_data;
+}
+
+int ios_ciolib_is_pixel_dirty(void) {
+    return ios_state.pixel_dirty;
+}
+
+void ios_ciolib_clear_pixel_dirty(void) {
+    ios_state.pixel_dirty = 0;
+}
+
+uint32_t* ios_ciolib_get_pixel_buffer(void) {
+    return ios_state.pixel_buffer;
+}
+
+int ios_ciolib_get_pixel_width(void) {
+    return ios_state.pixel_width;
+}
+
+int ios_ciolib_get_pixel_height(void) {
+    return ios_state.pixel_height;
 }
 
 // Push keyboard input from Swift
@@ -623,12 +795,13 @@ static void ios_gotoxy(int x, int y) {
     pthread_mutex_lock(&ios_state.mutex);
     // Explicit cursor positioning cancels any pending wrap
     ios_state.pending_wrap = 0;
-    if (x >= 1 && x <= ios_state.width) {
-        ios_state.cursor_x = x;
-    }
-    if (y >= 1 && y <= ios_state.height) {
-        ios_state.cursor_y = y;
-    }
+    // Clamp to valid screen bounds (standard ANSI behavior for ESC[H etc.)
+    if (x < 1) x = 1;
+    if (x > ios_state.width) x = ios_state.width;
+    if (y < 1) y = 1;
+    if (y > ios_state.height) y = ios_state.height;
+    ios_state.cursor_x = x;
+    ios_state.cursor_y = y;
     pthread_mutex_unlock(&ios_state.mutex);
 }
 
@@ -674,6 +847,17 @@ static void ios_clrscr(void) {
         }
         ios_state.cursor_x = 1;
         ios_state.cursor_y = 1;
+        // Clear sixel pixel buffer on screen clear
+        if (ios_state.pixel_has_data) {
+            if (ios_state.pixel_buffer != NULL && ios_state.pixel_width > 0 && ios_state.pixel_height > 0) {
+                size_t buf_size;
+                if (safe_mult_size((size_t)ios_state.pixel_width, (size_t)ios_state.pixel_height, &buf_size)) {
+                    memset(ios_state.pixel_buffer, 0, buf_size * sizeof(uint32_t));
+                }
+                ios_state.pixel_dirty = 1;
+                ios_state.pixel_has_data = 0;
+            }
+        }
         mark_screen_dirty();
     }
     pthread_mutex_unlock(&ios_state.mutex);
@@ -884,6 +1068,46 @@ static int ios_movetext(int sx, int sy, int ex, int ey, int dx, int dy) {
     ios_vmem_puttext(dx, dy, dx + width - 1, dy + height - 1, temp);
 
     free(temp);
+
+    // Scroll the sixel pixel buffer when text is scrolled upward.
+    // Only shift pixels for full-width upward moves (the scroll case).
+    if (dy < sy && dx == sx &&
+        sx == 1 && ex >= ios_state.width &&
+        ios_state.pixel_buffer != NULL && ios_state.pixel_has_data) {
+        pthread_mutex_lock(&ios_state.mutex);
+        int ch = ios_state.char_pixel_height;
+        if (ch <= 0) ch = 16;
+        int pw = ios_state.pixel_width;
+        int ph = ios_state.pixel_height;
+
+        int src_pixel_y = (sy - 1) * ch;   // first pixel row of source region
+        int dst_pixel_y = (dy - 1) * ch;   // destination pixel row
+        int move_height = (ey - sy + 1) * ch; // pixel rows being moved
+
+        // Clamp to pixel buffer bounds
+        if (src_pixel_y + move_height > ph)
+            move_height = ph - src_pixel_y;
+
+        if (move_height > 0 && src_pixel_y < ph && dst_pixel_y < ph) {
+            // Shift pixel rows upward
+            memmove(ios_state.pixel_buffer + dst_pixel_y * pw,
+                    ios_state.pixel_buffer + src_pixel_y * pw,
+                    (size_t)move_height * (size_t)pw * sizeof(uint32_t));
+
+            // Clear the vacated rows at the bottom
+            int clear_start = dst_pixel_y + move_height;
+            int clear_end = src_pixel_y + move_height;
+            if (clear_end > ph) clear_end = ph;
+            if (clear_start < clear_end) {
+                memset(ios_state.pixel_buffer + clear_start * pw,
+                       0,
+                       (size_t)(clear_end - clear_start) * (size_t)pw * sizeof(uint32_t));
+            }
+            ios_state.pixel_dirty = 1;
+        }
+        pthread_mutex_unlock(&ios_state.mutex);
+    }
+
     return 1;
 }
 
@@ -930,6 +1154,31 @@ static void ios_wscroll(void) {
             ios_state.screen[idx].bg = ios_state.bg_color;
             ios_state.screen[idx].font = 0;
             ios_state.screen[idx].flags = ios_state.current_flags;
+        }
+
+        // Scroll sixel pixel buffer up by one character cell height
+        if (ios_state.pixel_buffer != NULL && ios_state.pixel_has_data) {
+            int ch = ios_state.char_pixel_height;
+            if (ch <= 0) ch = 16;  // fallback to standard VGA height
+            int pw = ios_state.pixel_width;
+            int ph = ios_state.pixel_height;
+            if (ch < ph) {
+                // Shift pixel rows up by char_pixel_height
+                int rows_to_keep = ph - ch;
+                memmove(ios_state.pixel_buffer,
+                        ios_state.pixel_buffer + (ch * pw),
+                        (size_t)rows_to_keep * (size_t)pw * sizeof(uint32_t));
+                // Clear the newly exposed bottom rows
+                memset(ios_state.pixel_buffer + (rows_to_keep * pw),
+                       0,
+                       (size_t)ch * (size_t)pw * sizeof(uint32_t));
+            } else {
+                // Scroll distance >= buffer height, just clear everything
+                memset(ios_state.pixel_buffer, 0,
+                       (size_t)pw * (size_t)ph * sizeof(uint32_t));
+                ios_state.pixel_has_data = 0;
+            }
+            ios_state.pixel_dirty = 1;
         }
         mark_screen_dirty();
     }
@@ -1301,6 +1550,16 @@ void ios_ciolib_resize(int width, int height) {
     if (ios_state.cursor_x > width) ios_state.cursor_x = width;
     if (ios_state.cursor_y > height) ios_state.cursor_y = height;
 
+    // Free sixel pixel buffer on resize (will be re-allocated on next sixel draw)
+    if (ios_state.pixel_buffer) {
+        free(ios_state.pixel_buffer);
+        ios_state.pixel_buffer = NULL;
+        ios_state.pixel_width = 0;
+        ios_state.pixel_height = 0;
+        ios_state.pixel_has_data = 0;
+        ios_state.pixel_dirty = 0;
+    }
+
     mark_screen_dirty();
 
     pthread_mutex_unlock(&ios_state.mutex);
@@ -1317,6 +1576,14 @@ void ios_ciolib_cleanup(void) {
     if (ios_state.screen) {
         free(ios_state.screen);
         ios_state.screen = NULL;
+    }
+    if (ios_state.pixel_buffer) {
+        free(ios_state.pixel_buffer);
+        ios_state.pixel_buffer = NULL;
+        ios_state.pixel_width = 0;
+        ios_state.pixel_height = 0;
+        ios_state.pixel_has_data = 0;
+        ios_state.pixel_dirty = 0;
     }
     pthread_mutex_unlock(&ios_state.mutex);
     pthread_mutex_destroy(&ios_state.mutex);

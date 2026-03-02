@@ -29,6 +29,8 @@
 		AA000005013 /* VolumeButtonManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005012 /* VolumeButtonManager.swift */; };
 		AA000005021 /* SoundtrackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005020 /* SoundtrackManager.swift */; };
 		AA000005023 /* ModPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005022 /* ModPlayer.swift */; };
+		AA000005031 /* AudioAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005030 /* AudioAnalyzer.swift */; };
+		AA000003021 /* VisualizerOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003020 /* VisualizerOverlayView.swift */; };
 		AA000006001 /* NativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000006000 /* NativeBridge.swift */; };
 		AA000006003 /* syncterm_ios.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006002 /* syncterm_ios.c */; };
 		AA000006005 /* ios_ciolib.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000006004 /* ios_ciolib.c */; };
@@ -268,6 +270,8 @@
 		AA000005012 /* VolumeButtonManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeButtonManager.swift; sourceTree = "<group>"; };
 		AA000005020 /* SoundtrackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundtrackManager.swift; sourceTree = "<group>"; };
 		AA000005022 /* ModPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModPlayer.swift; sourceTree = "<group>"; };
+		AA000005030 /* AudioAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioAnalyzer.swift; sourceTree = "<group>"; };
+		AA000003020 /* VisualizerOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualizerOverlayView.swift; sourceTree = "<group>"; };
 		AA000006000 /* NativeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeBridge.swift; sourceTree = "<group>"; };
 		AA000006002 /* syncterm_ios.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = syncterm_ios.c; sourceTree = "<group>"; };
 		AA000006004 /* ios_ciolib.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ios_ciolib.c; sourceTree = "<group>"; };
@@ -490,12 +494,12 @@
 		BB000000307 /* libxmp/smix.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/smix.c; sourceTree = "<group>"; };
 		BB000000309 /* libxmp/tempfile.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/tempfile.c; sourceTree = "<group>"; };
 		BB000000311 /* libxmp/virtual.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = libxmp/virtual.c; sourceTree = "<group>"; };
-		F93634C32F4E643E00FAFCC4 /* GoogleService-Info 2.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info 2.plist"; sourceTree = "<group>"; };
+
 		F93634CA2F4E65B100FAFCC4 /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
 		F93634CC2F4E65CB00FAFCC4 /* FirebaseChatManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseChatManager.swift; sourceTree = "<group>"; };
 		F93634CE2F4E65DC00FAFCC4 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
 		F93634D02F4E65EB00FAFCC4 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
-		F93634D22F4E6D1800FAFCC4 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		F93634D22F4E6D1800FAFCC4 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "TERMinator/GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -532,7 +536,6 @@
 		AA200001000 /* TERMinator */ = {
 			isa = PBXGroup;
 			children = (
-				F93634C32F4E643E00FAFCC4 /* GoogleService-Info 2.plist */,
 				AA000001000 /* TERMinatorApp.swift */,
 				AA000006009 /* TERMinator-Bridging-Header.h */,
 				AA200003000 /* Models */,
@@ -579,6 +582,7 @@
 				AA000003012 /* CrtMarqueeView.swift */,
 				AA000003014 /* HistoryTickerView.swift */,
 				AA000003016 /* TerminalMetalView.swift */,
+				AA000003020 /* VisualizerOverlayView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -605,6 +609,7 @@
 				AA000005012 /* VolumeButtonManager.swift */,
 				AA000005020 /* SoundtrackManager.swift */,
 				AA000005022 /* ModPlayer.swift */,
+				AA000005030 /* AudioAnalyzer.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -993,6 +998,8 @@
 				AA0000000000000000000002 /* UIScale.swift in Sources */,
 				AA000005021 /* SoundtrackManager.swift in Sources */,
 				AA000005023 /* ModPlayer.swift in Sources */,
+				AA000005031 /* AudioAnalyzer.swift in Sources */,
+				AA000003021 /* VisualizerOverlayView.swift in Sources */,
 				BB000000002 /* modplayer_ios.c in Sources */,
 				BB000000004 /* libxmp/control.c in Sources */,
 				BB000000006 /* libxmp/dataio.c in Sources */,
@@ -1325,7 +1332,7 @@
 					"$(inherited)",
 					"$(SRCROOT)/TERMinator/Bridge/cryptlib/$(CRYPTLIB_PLATFORM)",
 				);
-				MARKETING_VERSION = 1.1.8;
+				MARKETING_VERSION = 1.1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.JSONbourne.TERMinator-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1379,7 +1386,7 @@
 					"$(inherited)",
 					"$(SRCROOT)/TERMinator/Bridge/cryptlib/$(CRYPTLIB_PLATFORM)",
 				);
-				MARKETING_VERSION = 1.1.8;
+				MARKETING_VERSION = 1.1.9;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.JSONbourne.TERMinator-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

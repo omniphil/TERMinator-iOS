@@ -44,4 +44,19 @@ bool ios_ciolib_get_dirty_region(int32_t *minX, int32_t *minY,
 // Input
 void ios_ciolib_push_input_buffer(const unsigned char *data, int len);
 
+// Sixel pixel framebuffer
+struct ciolib_pixels;
+struct ciolib_mask;
+int ios_ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey,
+                          uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off,
+                          struct ciolib_pixels *pixels, struct ciolib_mask *mask);
+void ios_ciolib_clear_pixels(void);
+void ios_ciolib_set_char_pixel_height(int h);
+int ios_ciolib_has_sixel_data(void);
+int ios_ciolib_is_pixel_dirty(void);
+void ios_ciolib_clear_pixel_dirty(void);
+uint32_t* ios_ciolib_get_pixel_buffer(void);
+int ios_ciolib_get_pixel_width(void);
+int ios_ciolib_get_pixel_height(void);
+
 #endif /* IOS_CIOLIB_H */

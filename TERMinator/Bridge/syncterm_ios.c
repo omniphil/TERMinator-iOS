@@ -88,10 +88,14 @@ static volatile int g_upload_file_queued = 0;
 // Bell detection
 static volatile int g_bell_detected = 0;
 
-// Audio command buffer (OSC 800 / TAP)
-#define AUDIO_CMD_BUFFER_SIZE 4096
-static char g_audio_cmd_buffer[AUDIO_CMD_BUFFER_SIZE];
-static volatile int g_audio_cmd_ready = 0;
+// TAP+ command queue - receives OSC 800 commands from cterm
+#define TAP_CMD_BUFFER_SIZE 4096
+#define TAP_CMD_QUEUE_SIZE 64
+static char g_tap_cmd_queue[TAP_CMD_QUEUE_SIZE][TAP_CMD_BUFFER_SIZE];
+static int  g_tap_cmd_lengths[TAP_CMD_QUEUE_SIZE];
+static volatile int g_tap_queue_head = 0;   // Next slot to write
+static volatile int g_tap_queue_tail = 0;   // Next slot to read
+static volatile int g_tap_queue_count = 0;  // Number of commands pending
 static pthread_mutex_t g_audio_lock = PTHREAD_MUTEX_INITIALIZER;
 
 // Connection statistics
@@ -269,6 +273,12 @@ void native_destroy(void) {
 
     ios_ciolib_cleanup();
     g_initialized = 0;
+
+    // Reset terminal dimensions so the next native_set_terminal_size()
+    // call (from setScreenMode) will detect a change and properly resize
+    // ios_ciolib, which ios_ciolib_init() always resets to 80x25.
+    g_term_width = 80;
+    g_term_height = 25;
 
     pthread_mutex_unlock(&g_lock);
 }
@@ -1028,6 +1038,9 @@ const uint8_t* native_get_font_bitmap(int32_t *width, int32_t *height, int32_t *
     g_font_bitmap_cache[1] = (uint8_t)font_height;
     memcpy(g_font_bitmap_cache + 2, bitmap_data, data_size);
 
+    /* Update char_pixel_height for sixel scroll calculations */
+    ios_ciolib_set_char_pixel_height(font_height);
+
     *width = 8;
     *height = font_height;
     *count = data_size;
@@ -1266,33 +1279,41 @@ bool native_check_bell(void) {
 }
 
 // ============================================================================
-// MARK: - Audio Command Buffer (OSC 800 / TAP)
+// MARK: - TAP+ Command Queue (OSC 800)
 // ============================================================================
 
 /// Called from syncterm_stubs.c when an OSC 800 sequence is parsed.
+/// Pushes to a 16-entry circular queue so rapid commands aren't dropped.
 void ios_audio_command(const char *cmd, int len) {
-    if (!cmd || len <= 0 || len >= AUDIO_CMD_BUFFER_SIZE) return;
+    if (!cmd || len <= 0 || len >= TAP_CMD_BUFFER_SIZE) return;
 
     pthread_mutex_lock(&g_audio_lock);
-    memcpy(g_audio_cmd_buffer, cmd, len);
-    g_audio_cmd_buffer[len] = '\0';
-    g_audio_cmd_ready = 1;
+    if (g_tap_queue_count < TAP_CMD_QUEUE_SIZE) {
+        memcpy(g_tap_cmd_queue[g_tap_queue_head], cmd, len);
+        g_tap_cmd_queue[g_tap_queue_head][len] = '\0';
+        g_tap_cmd_lengths[g_tap_queue_head] = (int)len;
+        g_tap_queue_head = (g_tap_queue_head + 1) % TAP_CMD_QUEUE_SIZE;
+        g_tap_queue_count++;
+    }
     pthread_mutex_unlock(&g_audio_lock);
 }
 
 bool native_check_audio_command(void) {
-    return g_audio_cmd_ready != 0;
+    return g_tap_queue_count > 0;
 }
 
 const char* native_get_audio_command(void) {
     pthread_mutex_lock(&g_audio_lock);
-    if (!g_audio_cmd_ready) {
+    if (g_tap_queue_count <= 0) {
         pthread_mutex_unlock(&g_audio_lock);
         return NULL;
     }
-    g_audio_cmd_ready = 0;
+    g_tap_cmd_queue[g_tap_queue_tail][g_tap_cmd_lengths[g_tap_queue_tail]] = '\0';
+    const char *result = g_tap_cmd_queue[g_tap_queue_tail];
+    g_tap_queue_tail = (g_tap_queue_tail + 1) % TAP_CMD_QUEUE_SIZE;
+    g_tap_queue_count--;
     pthread_mutex_unlock(&g_audio_lock);
-    return g_audio_cmd_buffer;
+    return result;
 }
 
 // ============================================================================
@@ -1410,6 +1431,55 @@ void native_transfer_reset(void) {
 void native_transfer_cleanup(void) {
     zmodem_ios_cleanup();
     native_transfer_reset();
+}
+
+// ============================================================================
+// Sixel Graphics Bridge
+// ============================================================================
+
+bool native_has_sixel_data(void) {
+    return ios_ciolib_has_sixel_data() != 0;
+}
+
+bool native_is_sixel_dirty(void) {
+    return ios_ciolib_is_pixel_dirty() != 0;
+}
+
+bool native_get_sixel_dimensions(int32_t *width, int32_t *height) {
+    if (!width || !height) return false;
+    if (!ios_ciolib_has_sixel_data()) {
+        *width = 0;
+        *height = 0;
+        return false;
+    }
+    *width = ios_ciolib_get_pixel_width();
+    *height = ios_ciolib_get_pixel_height();
+    return true;
+}
+
+int32_t native_get_sixel_buffer(int32_t *buffer, int32_t bufferLen) {
+    if (!buffer || bufferLen <= 0) return 0;
+    if (!ios_ciolib_has_sixel_data()) return 0;
+
+    ios_ciolib_lock();
+
+    int pw = ios_ciolib_get_pixel_width();
+    int ph = ios_ciolib_get_pixel_height();
+    uint32_t *src = ios_ciolib_get_pixel_buffer();
+
+    if (!src || pw <= 0 || ph <= 0) {
+        ios_ciolib_unlock();
+        return 0;
+    }
+
+    int total = pw * ph;
+    if (total > bufferLen) total = bufferLen;
+
+    memcpy(buffer, src, (size_t)total * sizeof(int32_t));
+    ios_ciolib_clear_pixel_dirty();
+
+    ios_ciolib_unlock();
+    return total;
 }
 
 // ============================================================================

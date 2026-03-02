@@ -426,3 +426,36 @@ cterm_emulation_t get_emulation(struct bbslist *bbs) {
     (void)bbs;
     return CTERM_EMULATION_ANSI_BBS;
 }
+
+// ============================================================================
+// ciolib Pixel/Graphics Stubs
+// ============================================================================
+
+#include "ciolib.h"
+#include "ios_ciolib.h"
+
+// Pixel manipulation - forwards to ios_ciolib for sixel graphics rendering
+int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey,
+                     uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off,
+                     struct ciolib_pixels *pixels, struct ciolib_mask *mask) {
+    return ios_ciolib_setpixels(sx, sy, ex, ey, x_off, y_off, mx_off, my_off, pixels, mask);
+}
+
+struct ciolib_pixels *ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force) {
+    (void)sx; (void)sy; (void)ex; (void)ey; (void)force;
+    return NULL;  // Not supported
+}
+
+void ciolib_freepixels(struct ciolib_pixels *pixels) {
+    (void)pixels;
+    // No-op
+}
+
+// Custom cursor - not supported on iOS
+void ciolib_getcustomcursor(int *startline, int *endline, int *range, int *blink, int *visible) {
+    if (startline) *startline = 0;
+    if (endline) *endline = 0;
+    if (range) *range = 0;
+    if (blink) *blink = 1;
+    if (visible) *visible = 1;
+}

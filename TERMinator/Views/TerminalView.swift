@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreGraphics
 import UIKit
+import AVKit
 import os.log
 
 private let termLogger = Logger(subsystem: "com.jsonbourne.TERMinator", category: "TerminalView")
@@ -427,6 +428,26 @@ struct TerminalView: View {
                     if viewModel.isSelecting {
                         selectionOverlay(in: geometry)
                     }
+                }
+
+                // TAP+ video overlay
+                if viewModel.videoActive, let player = viewModel.videoPlayer {
+                    videoOverlay(player: player, in: geometry)
+                }
+
+                // TAP+ image overlay
+                if viewModel.imageActive, let image = viewModel.imageData {
+                    imageOverlay(image: image, in: geometry)
+                }
+
+                // TAP+ logo overlay (persistent, on top of image)
+                if viewModel.logoActive, let logoImage = viewModel.logoImageData {
+                    logoOverlay(image: logoImage, in: geometry)
+                }
+
+                // TAP+ visualizer overlay
+                if viewModel.visualizerActive {
+                    visualizerOverlay(in: geometry)
                 }
 
                 // Logging indicator
@@ -880,6 +901,123 @@ struct TerminalView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + tripleTapTimeout, execute: task)
     }
 
+    // MARK: - TAP+ Overlays
+
+    /// Compute cell size in points, accounting for zoom + container scaling.
+    /// Cell size in points, matching the Metal renderer's aspect-fit scaling.
+    /// Uses min(scaleW, scaleH) so the full terminal grid fits within the visible area
+    /// in both dimensions — same algorithm as the Metal vertex shader.
+    private func cellSizeInPoints(in geometry: GeometryProxy) -> (w: CGFloat, h: CGFloat) {
+        let fontW = viewModel.fontWidth > 0 ? CGFloat(viewModel.fontWidth) : baseCellWidth
+        let fontH = viewModel.fontHeight > 0 ? CGFloat(viewModel.fontHeight) : baseCellHeight
+        let cols = CGFloat(viewModel.screenColumns > 0 ? viewModel.screenColumns : 80)
+        let rows = CGFloat(viewModel.screenRows > 0 ? viewModel.screenRows : 25)
+        let termNativeW = cols * fontW
+        let termNativeH = rows * fontH
+        let scaleW = (geometry.size.width > 0 && termNativeW > 0)
+            ? geometry.size.width / termNativeW : 1.0
+        let scaleH = (geometry.size.height > 0 && termNativeH > 0)
+            ? geometry.size.height / termNativeH : 1.0
+        let baseScale = min(scaleW, scaleH)
+        let cellW = fontW * baseScale * viewModel.zoomLevel
+        let cellH = fontH * baseScale * viewModel.zoomLevel
+
+        return (cellW, cellH)
+    }
+
+    private func videoOverlay(player: AVPlayer, in geometry: GeometryProxy) -> some View {
+        let cell = cellSizeInPoints(in: geometry)
+        let x = CGFloat(viewModel.videoCol - 1) * cell.w + viewModel.panOffset.width
+        let y = CGFloat(viewModel.videoRow - 1) * cell.h + viewModel.panOffset.height
+        let w = CGFloat(viewModel.videoCellW) * cell.w
+        let h = CGFloat(viewModel.videoCellH) * cell.h
+
+        // Size the view to match the video's native aspect ratio within the
+        // cell bounding box — no letterboxing, matching Android's fitWithinRect.
+        let nw = viewModel.videoNativeWidth
+        let nh = viewModel.videoNativeHeight
+        let fitW: CGFloat
+        let fitH: CGFloat
+        let offX: CGFloat
+        let offY: CGFloat
+        if nw > 0 && nh > 0 {
+            let scale = min(w / nw, h / nh)
+            fitW = nw * scale
+            fitH = nh * scale
+            offX = x + (w - fitW) / 2
+            offY = y + (h - fitH) / 2
+        } else {
+            // Dimensions not known yet — fill the cell area as placeholder
+            fitW = w
+            fitH = h
+            offX = x
+            offY = y
+        }
+
+        return AVPlayerLayerView(player: player)
+            .frame(width: fitW, height: fitH)
+            .position(x: offX + fitW / 2, y: offY + fitH / 2)
+            .allowsHitTesting(false)
+    }
+
+    private func imageOverlay(image: UIImage, in geometry: GeometryProxy) -> some View {
+        let cell = cellSizeInPoints(in: geometry)
+        let x = CGFloat(viewModel.imageCol - 1) * cell.w + viewModel.panOffset.width
+        let y = CGFloat(viewModel.imageRow - 1) * cell.h + viewModel.panOffset.height
+        let w = CGFloat(viewModel.imageCellW) * cell.w
+        let h = CGFloat(viewModel.imageCellH) * cell.h
+
+        // Scale image to fit within the cell area while preserving aspect ratio
+        // (matches Android's TapCoordinateMapper.fitWithinRect)
+        let bw = image.size.width
+        let bh = image.size.height
+        let scale = min(w / bw, h / bh)
+        let fitW = bw * scale
+        let fitH = bh * scale
+
+        return AnimatedImageView(image: image)
+            .frame(width: fitW, height: fitH)
+            .position(x: x + w / 2, y: y + h / 2)
+            .allowsHitTesting(false)
+    }
+
+    private func logoOverlay(image: UIImage, in geometry: GeometryProxy) -> some View {
+        let cell = cellSizeInPoints(in: geometry)
+        // Clamp logo dimensions to terminal grid bounds
+        let maxCols = CGFloat(viewModel.screenColumns)
+        let maxRows = CGFloat(viewModel.screenRows)
+        let clampedW = min(CGFloat(viewModel.logoCellW), maxCols)
+        let clampedH = min(CGFloat(viewModel.logoCellH), maxRows)
+        let x = CGFloat(viewModel.logoCol - 1) * cell.w + viewModel.panOffset.width
+        let y = CGFloat(viewModel.logoRow - 1) * cell.h + viewModel.panOffset.height
+        let w = clampedW * cell.w
+        let h = clampedH * cell.h
+
+        // Fill the full cell area — scaleToFill stretches the logo to fill,
+        // matching Android's fillRect + scaleType="fitXY" behavior
+        return AnimatedImageView(image: image, contentMode: .scaleToFill)
+            .frame(width: w, height: h)
+            .position(x: x + w / 2, y: y + h / 2)
+            .allowsHitTesting(false)
+    }
+
+    private func visualizerOverlay(in geometry: GeometryProxy) -> some View {
+        let cell = cellSizeInPoints(in: geometry)
+        return VisualizerOverlayView(
+            audioAnalyzer: SoundtrackManager.shared.audioAnalyzer,
+            row: viewModel.visualizerRow,
+            col: viewModel.visualizerCol,
+            cellsWide: viewModel.visualizerCellW,
+            cellsHigh: viewModel.visualizerCellH,
+            style: viewModel.visualizerStyle,
+            cellWidth: cell.w,
+            cellHeight: cell.h,
+            panOffsetX: viewModel.panOffset.width,
+            panOffsetY: viewModel.panOffset.height
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     // MARK: - Overlays
 
     private var loggingIndicator: some View {
@@ -973,6 +1111,70 @@ struct TerminalView: View {
         }
 
         return defaultPalette
+    }
+}
+
+// MARK: - AVPlayer Layer View (lightweight video rendering without controls)
+
+struct AVPlayerLayerView: UIViewRepresentable {
+    let player: AVPlayer
+
+    func makeUIView(context: Context) -> UIView {
+        let view = PlayerContainerView()
+        view.backgroundColor = .clear
+        view.playerLayer.player = player
+        view.playerLayer.videoGravity = .resizeAspectFill
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        guard let container = uiView as? PlayerContainerView else { return }
+        if container.playerLayer.player !== player {
+            container.playerLayer.player = player
+        }
+    }
+
+    private class PlayerContainerView: UIView {
+        override class var layerClass: AnyClass { AVPlayerLayer.self }
+        var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+    }
+}
+
+// MARK: - Animated Image View (supports animated GIFs via UIImageView)
+
+struct AnimatedImageView: UIViewRepresentable {
+    let image: UIImage
+    var contentMode: UIView.ContentMode = .scaleToFill
+
+    func makeUIView(context: Context) -> UIImageView {
+        let iv = UIImageView()
+        iv.contentMode = contentMode
+        iv.clipsToBounds = true
+        iv.backgroundColor = .clear
+        // Prevent intrinsic content size from overriding SwiftUI frame constraints
+        iv.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        iv.setContentHuggingPriority(.defaultLow, for: .vertical)
+        iv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        iv.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        return iv
+    }
+
+    func updateUIView(_ uiView: UIImageView, context: Context) {
+        if uiView.contentMode != contentMode {
+            uiView.contentMode = contentMode
+        }
+        if uiView.image !== image {
+            uiView.image = image
+            if image.images != nil {
+                uiView.startAnimating()
+            }
+        }
+    }
+
+    /// Accept whatever size SwiftUI proposes — don't use the image's intrinsic size.
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UIImageView, context: Context) -> CGSize? {
+        guard let w = proposal.width, let h = proposal.height else { return nil }
+        return CGSize(width: w, height: h)
     }
 }
 

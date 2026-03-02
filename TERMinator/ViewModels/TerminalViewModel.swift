@@ -1,6 +1,8 @@
 import Foundation
 import Combine
 import UIKit
+import ImageIO
+import AVFoundation
 import os.log
 
 private let logger = Logger(subsystem: "com.jsonbourne.TERMinator", category: "Terminal")
@@ -48,6 +50,39 @@ class TerminalViewModel: ObservableObject {
     @Published var panOffset: CGSize = .zero
 
     @Published var detectedURLs: [DetectedURL] = []
+
+    // TAP+ multimedia overlay state
+    @Published var imageActive: Bool = false
+    @Published var imageData: UIImage?
+    @Published var imageRow: Double = 1.0
+    @Published var imageCol: Double = 1.0
+    @Published var imageCellW: Double = 78.0
+    @Published var imageCellH: Double = 23.0
+    private var imagePositionSet: Bool = false
+    @Published var videoActive: Bool = false
+    @Published var videoURL: URL?
+    @Published var videoPlayer: AVPlayer?
+    @Published var videoRow: Double = 1.0
+    @Published var videoCol: Double = 1.0
+    @Published var videoCellW: Double = 80.0
+    @Published var videoCellH: Double = 25.0
+    @Published var videoNativeWidth: CGFloat = 0
+    @Published var videoNativeHeight: CGFloat = 0
+    @Published var visualizerActive: Bool = false
+    @Published var visualizerRow: Double = 1.0
+    @Published var visualizerCol: Double = 1.0
+    @Published var visualizerCellW: Double = 80.0
+    @Published var visualizerCellH: Double = 25.0
+    @Published var visualizerStyle: String = "bars"
+
+    // Logo overlay state (fractional cell coordinates, auto-sized on load)
+    @Published var logoActive: Bool = false
+    @Published var logoImageData: UIImage?
+    @Published var logoRow: Double = 22.0
+    @Published var logoCol: Double = 64.0
+    @Published var logoCellW: Double = 16.0
+    @Published var logoCellH: Double = 3.0
+    private var logoPositionSet: Bool = false
 
     /// Container size from GeometryReader, used for pan clamping
     var containerSize: CGSize = .zero
@@ -118,6 +153,12 @@ class TerminalViewModel: ObservableObject {
     // Exposed for Metal renderer access
     private(set) var fontBitmap: Data?
     private var glyphCache = NSCache<NSString, CGImage>()
+
+    // Sixel graphics state
+    private var sixelPixels: [UInt32]?
+    private var sixelWidth = 0
+    private var sixelHeight = 0
+    private var hasSixelData = false
 
     // ZMODEM detection return codes from native layer
     // These MUST match values in native code (conn_api.c)
@@ -365,6 +406,7 @@ class TerminalViewModel: ObservableObject {
         }
 
         SoundtrackManager.shared.stop()
+        clearTapPlusOverlays()
         NativeBridge.shared.disconnect()
         connectionState = .disconnected
     }
@@ -441,10 +483,14 @@ class TerminalViewModel: ObservableObject {
             BellManager.shared.playBell()
         }
 
-        // Check for audio command (OSC 800 / TAP)
-        if NativeBridge.shared.checkAudioCommand() {
+        // Drain TAP+ command queue (OSC 800)
+        while NativeBridge.shared.checkAudioCommand() {
             if let cmd = NativeBridge.shared.getAudioCommand() {
-                SoundtrackManager.shared.handleCommand(cmd)
+                if !SoundtrackManager.shared.handleCommand(cmd) {
+                    handleTapPlusCommand(cmd)
+                } else {
+                    handleAudioVisualSideEffects(cmd)
+                }
             }
         }
 
@@ -480,6 +526,7 @@ class TerminalViewModel: ObservableObject {
         // Stop polling first to prevent re-entry
         stopPolling()
         SoundtrackManager.shared.stop()
+        clearTapPlusOverlays()
 
         // Process any remaining data in the buffer before showing disconnect
         var processedMore = true
@@ -568,6 +615,35 @@ class TerminalViewModel: ObservableObject {
         if let pal = NativeBridge.shared.getPalette() {
             palette = pal
         }
+
+        // Refresh sixel overlay
+        refreshSixelOverlay()
+    }
+
+    /// Refresh the sixel pixel overlay from native data.
+    private func refreshSixelOverlay() {
+        let hasSixel = NativeBridge.shared.hasSixelData()
+
+        if !hasSixel {
+            if hasSixelData {
+                sixelPixels = nil
+                hasSixelData = false
+            }
+            return
+        }
+
+        let isDirty = NativeBridge.shared.isSixelDirty()
+        if !isDirty && sixelPixels != nil {
+            return  // No changes since last read
+        }
+
+        guard let dims = NativeBridge.shared.getSixelDimensions() else { return }
+        guard let pixels = NativeBridge.shared.getSixelBuffer(width: dims.width, height: dims.height) else { return }
+
+        sixelPixels = pixels
+        sixelWidth = dims.width
+        sixelHeight = dims.height
+        hasSixelData = true
     }
 
     // MARK: - Input
@@ -575,6 +651,26 @@ class TerminalViewModel: ObservableObject {
     /// Send a character to the terminal.
     func sendCharacter(_ char: Character) {
         guard connectionState == .connected else { return }
+
+        // TAP+ image overlay: U/J to scale, ESC to dismiss
+        if imageActive {
+            switch char {
+            case "u", "U":
+                tapPlusScaleImage(up: true)
+                return
+            case "j", "J":
+                tapPlusScaleImage(up: false)
+                return
+            case "\u{1B}":  // ESC dismisses image
+                imageActive = false
+                imageData = nil
+                displayBufferVersion += 1
+                return
+            default:
+                break
+            }
+        }
+
         resetScrollback()
         let data = String(char).data(using: .utf8) ?? Data()
         let sent = NativeBridge.shared.sendData(data)
@@ -586,6 +682,27 @@ class TerminalViewModel: ObservableObject {
     /// Send a string to the terminal.
     func sendString(_ string: String) {
         guard connectionState == .connected else { return }
+
+        // TAP+ image overlay: arrow keys to move
+        if imageActive {
+            switch string {
+            case "\u{1B}[A":  // Up
+                imageRow = max(0, imageRow - 1)
+                return
+            case "\u{1B}[B":  // Down
+                imageRow = min(Double((screenRows > 0 ? screenRows : 25) - 1), imageRow + 1)
+                return
+            case "\u{1B}[C":  // Right
+                imageCol = min(Double((screenColumns > 0 ? screenColumns : 80) - 1), imageCol + 1)
+                return
+            case "\u{1B}[D":  // Left
+                imageCol = max(0, imageCol - 1)
+                return
+            default:
+                break
+            }
+        }
+
         resetScrollback()
         let sent = NativeBridge.shared.sendString(string)
         if sent > 0 {
@@ -710,6 +827,368 @@ class TerminalViewModel: ObservableObject {
     /// Cancel the current transfer.
     func cancelTransfer() {
         TransferManager.shared.cancelTransfer()
+    }
+
+    // MARK: - TAP+ Multimedia Commands
+
+    /// Handle non-audio TAP+ commands (visualizer, images, video).
+    /// Called when SoundtrackManager doesn't recognize the command.
+    func handleTapPlusCommand(_ cmd: String) {
+        let parts = cmd.components(separatedBy: ";")
+        guard !parts.isEmpty else { return }
+
+        switch parts[0].lowercased() {
+        case "visualizer":
+            if parts.count >= 6, parts[1].lowercased() == "on" {
+                guard let row1 = Double(parts[2]), let col1 = Double(parts[3]),
+                      let row2 = Double(parts[4]), let col2 = Double(parts[5]) else { return }
+                let vizStyle = parts.count >= 7 ? parts[6] : "bars"
+                visualizerRow = row1
+                visualizerCol = col1
+                visualizerCellW = col2 - col1 + 1
+                visualizerCellH = row2 - row1 + 1
+                visualizerStyle = vizStyle
+                visualizerActive = true
+            } else if parts.count >= 2, parts[1].lowercased() == "off" {
+                visualizerActive = false
+            }
+
+        case "video":
+            if parts.count >= 6, parts[1].lowercased() == "on" {
+                guard let row1 = Double(parts[2]), let col1 = Double(parts[3]),
+                      let row2 = Double(parts[4]), let col2 = Double(parts[5]) else { return }
+                let displayName = parts.count >= 7 ? parts[6] : nil
+                videoRow = row1
+                videoCol = col1
+                videoCellW = col2 - col1 + 1
+                videoCellH = row2 - row1 + 1
+                if let displayName = displayName {
+                    resolveAndShowVideo(displayName: displayName)
+                }
+                videoActive = true
+            } else if parts.count >= 2, parts[1].lowercased() == "off" {
+                videoStatusObserver?.invalidate()
+                videoStatusObserver = nil
+                videoPlayer?.pause()
+                videoPlayer = nil
+                videoActive = false
+                videoURL = nil
+                videoNativeWidth = 0
+                videoNativeHeight = 0
+                displayBufferVersion += 1  // Force terminal redraw under overlay
+            }
+
+        case "videomove":
+            guard parts.count >= 3,
+                  let r = Double(parts[1]), let c = Double(parts[2]) else { return }
+            videoRow = r
+            videoCol = c
+
+        case "videoset":
+            guard parts.count >= 5,
+                  let row1 = Double(parts[1]), let col1 = Double(parts[2]),
+                  let row2 = Double(parts[3]), let col2 = Double(parts[4]) else { return }
+            videoRow = row1
+            videoCol = col1
+            videoCellW = col2 - col1 + 1
+            videoCellH = row2 - row1 + 1
+
+        case "imgshow":
+            guard let displayName = parts.count >= 2 ? parts[1] : nil else { return }
+            resolveAndShowImage(displayName: displayName)
+
+        case "imgmove":
+            guard parts.count >= 3,
+                  let r = Double(parts[1]), let c = Double(parts[2]) else { return }
+            imageRow = r
+            imageCol = c
+            imagePositionSet = true
+
+        case "imgresize":
+            guard parts.count >= 3,
+                  let w = Double(parts[1]), let h = Double(parts[2]) else { return }
+            imageCellW = w
+            imageCellH = h
+            imagePositionSet = true
+
+        case "imgset":
+            guard parts.count >= 5,
+                  let row1 = Double(parts[1]), let col1 = Double(parts[2]),
+                  let row2 = Double(parts[3]), let col2 = Double(parts[4]) else { return }
+            imageRow = row1
+            imageCol = col1
+            imageCellW = col2 - col1 + 1
+            imageCellH = row2 - row1 + 1
+            imagePositionSet = true
+
+        case "imghide":
+            imageData = nil
+            imageActive = false
+            imagePositionSet = false
+            displayBufferVersion += 1  // Force terminal redraw under overlay
+
+        case "logoshow":
+            guard let displayName = parts.count >= 2 ? parts[1] : nil else { return }
+            resolveAndShowLogo(displayName: displayName)
+
+        case "logohide":
+            logoImageData = nil
+            logoActive = false
+            logoPositionSet = false
+            displayBufferVersion += 1  // Force terminal redraw under overlay
+
+        case "logoset":
+            guard parts.count >= 5,
+                  let row1 = Double(parts[1]), let col1 = Double(parts[2]),
+                  let row2 = Double(parts[3]), let col2 = Double(parts[4]) else { return }
+            logoRow = row1
+            logoCol = col1
+            logoCellW = col2 - col1 + 1
+            logoCellH = row2 - row1 + 1
+            logoPositionSet = true
+
+        default:
+            logger.warning("Unknown TAP+ command: \(parts[0])")
+        }
+    }
+
+    /// Handle visual side-effects of audio commands (play/stop/seek).
+    /// Called when SoundtrackManager handled the command for audio, but
+    /// we also need to update visual overlay state.
+    private func handleAudioVisualSideEffects(_ cmd: String) {
+        let parts = cmd.components(separatedBy: ";")
+        guard !parts.isEmpty else { return }
+
+        switch parts[0].lowercased() {
+        case "play":
+            guard let displayName = parts.count >= 2 ? parts[1] : nil else { return }
+            if videoActive && videoPlayer == nil {
+                // video;on was sent before play — resolve the file and create the player
+                resolveAndShowVideo(displayName: displayName)
+            } else if !videoActive {
+                // Auto-detect video by file extension (no prior video;on)
+                let ext = (displayName as NSString).pathExtension.lowercased()
+                let videoExts: Set<String> = ["mp4", "m4v", "webm"]
+                if videoExts.contains(ext) {
+                    let cols = Double(screenColumns > 0 ? screenColumns : 80)
+                    let rows = Double(screenRows > 0 ? screenRows : 25)
+                    let cellsW = cols * 0.8
+                    let cellsH = rows * 0.8
+                    videoCol = 1.0 + (cols - cellsW) / 2.0
+                    videoRow = 1.0 + (rows - cellsH) / 2.0
+                    videoCellW = cellsW
+                    videoCellH = cellsH
+                    resolveAndShowVideo(displayName: displayName)
+                    videoActive = true
+                }
+            }
+
+        case "stop":
+            // Hide all visual overlays
+            imageData = nil
+            imageActive = false
+            videoStatusObserver?.invalidate()
+            videoStatusObserver = nil
+            videoPlayer?.pause()
+            videoPlayer = nil
+            videoActive = false
+            videoURL = nil
+            visualizerActive = false
+            displayBufferVersion += 1  // Force terminal redraw under overlays
+
+        case "seek":
+            // Seek video player if active
+            guard parts.count >= 2, let posMs = Int(parts[1]),
+                  let player = videoPlayer else { return }
+            let time = CMTime(value: Int64(posMs), timescale: 1000)
+            player.seek(to: time)
+
+        default:
+            break
+        }
+    }
+
+    private func resolveAndShowImage(displayName: String) {
+        DispatchQueue.global().async { [weak self] in
+            guard let self = self else { return }
+            var file = SoundtrackManager.shared.resolveFile(displayName: displayName)
+            if file == nil {
+                for _ in 0..<40 {
+                    Thread.sleep(forTimeInterval: 0.25)
+                    file = SoundtrackManager.shared.resolveFile(displayName: displayName)
+                    if file != nil { break }
+                }
+            }
+            guard let file = file else { return }
+            let image = Self.loadImage(from: file)
+            guard let image = image else { return }
+            DispatchQueue.main.async {
+                // Default to 60% centered, unless imgset/imgmove/imgresize already set position
+                if !self.imagePositionSet {
+                    let cols = Double(self.screenColumns > 0 ? self.screenColumns : 80)
+                    let rows = Double(self.screenRows > 0 ? self.screenRows : 25)
+                    let cellsW = cols * 0.6
+                    let cellsH = rows * 0.6
+                    self.imageCellW = cellsW
+                    self.imageCellH = cellsH
+                    self.imageCol = 1.0 + (cols - cellsW) / 2.0
+                    self.imageRow = 1.0 + (rows - cellsH) / 2.0
+                }
+                self.imageData = image
+                self.imageActive = true
+            }
+        }
+    }
+
+    private func resolveAndShowLogo(displayName: String) {
+        DispatchQueue.global().async { [weak self] in
+            guard let self = self else { return }
+            var file = SoundtrackManager.shared.resolveFile(displayName: displayName)
+            if file == nil {
+                for _ in 0..<40 {
+                    Thread.sleep(forTimeInterval: 0.25)
+                    file = SoundtrackManager.shared.resolveFile(displayName: displayName)
+                    if file != nil { break }
+                }
+            }
+            guard let file = file else { return }
+            let image = Self.loadImage(from: file)
+            guard let image = image else { return }
+            DispatchQueue.main.async {
+                // Use logoset position if already set, otherwise auto-scale
+                if !self.logoPositionSet {
+                    let cols = Double(self.screenColumns > 0 ? self.screenColumns : 80)
+                    let rows = Double(self.screenRows > 0 ? self.screenRows : 25)
+                    let targetW = cols * 0.20
+                    let imgAspect = image.size.height / max(image.size.width, 1)
+                    let targetH = targetW * imgAspect * 2.0
+                    self.logoCellW = max(4, min(targetW, cols))
+                    self.logoCellH = max(1, min(targetH, rows * 0.25))
+                    self.logoCol = cols - self.logoCellW
+                    self.logoRow = rows - self.logoCellH
+                }
+                self.logoImageData = image
+                self.logoActive = true
+            }
+        }
+    }
+
+    /// Load an image from a URL, supporting animated GIFs via ImageIO.
+    private static func loadImage(from file: URL) -> UIImage? {
+        let ext = file.pathExtension.lowercased()
+        if ext == "gif" {
+            return loadAnimatedGif(from: file)
+        }
+        return UIImage(contentsOfFile: file.path)
+    }
+
+    /// Load an animated GIF as a UIImage with frame animation.
+    private static func loadAnimatedGif(from url: URL) -> UIImage? {
+        guard let data = try? Data(contentsOf: url),
+              let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let count = CGImageSourceGetCount(source)
+        if count <= 1 {
+            return UIImage(contentsOfFile: url.path)
+        }
+        var images: [UIImage] = []
+        var duration: Double = 0
+        for i in 0..<count {
+            guard let cgImage = CGImageSourceCreateImageAtIndex(source, i, nil) else { continue }
+            images.append(UIImage(cgImage: cgImage))
+            if let props = CGImageSourceCopyPropertiesAtIndex(source, i, nil) as? [String: Any],
+               let gifDict = props[kCGImagePropertyGIFDictionary as String] as? [String: Any] {
+                let delay = gifDict[kCGImagePropertyGIFUnclampedDelayTime as String] as? Double
+                    ?? gifDict[kCGImagePropertyGIFDelayTime as String] as? Double
+                    ?? 0.1
+                duration += delay
+            } else {
+                duration += 0.1
+            }
+        }
+        guard !images.isEmpty else { return nil }
+        return UIImage.animatedImage(with: images, duration: duration)
+    }
+
+    private var videoStatusObserver: NSKeyValueObservation?
+
+    private func resolveAndShowVideo(displayName: String) {
+        DispatchQueue.global().async { [weak self] in
+            guard let self = self else { return }
+            var file = SoundtrackManager.shared.resolveFile(displayName: displayName)
+            if file == nil {
+                for _ in 0..<40 {
+                    Thread.sleep(forTimeInterval: 0.25)
+                    file = SoundtrackManager.shared.resolveFile(displayName: displayName)
+                    if file != nil { break }
+                }
+            }
+            guard let file = file else {
+                logger.warning("TAP+ video: could not resolve file '\(displayName)'")
+                return
+            }
+            logger.info("TAP+ video: resolved '\(displayName)' → \(file.path)")
+            DispatchQueue.main.async {
+                self.videoURL = file
+                let item = AVPlayerItem(url: file)
+                let player = AVPlayer(playerItem: item)
+                player.isMuted = false
+                // Observe item status to play only when ready
+                self.videoStatusObserver = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+                    guard item.status == .readyToPlay else {
+                        if item.status == .failed {
+                            logger.error("TAP+ video failed: \(item.error?.localizedDescription ?? "unknown")")
+                        }
+                        return
+                    }
+                    DispatchQueue.main.async {
+                        // Extract native video dimensions for aspect-correct overlay sizing
+                        let size = item.presentationSize
+                        if size.width > 0 && size.height > 0 {
+                            self?.videoNativeWidth = size.width
+                            self?.videoNativeHeight = size.height
+                        }
+                        self?.videoPlayer?.play()
+                    }
+                }
+                self.videoPlayer = player
+                self.videoActive = true
+            }
+        }
+    }
+
+    /// Scale the active TAP+ image overlay up or down by ~10%.
+    private func tapPlusScaleImage(up: Bool) {
+        let cols = Double(screenColumns > 0 ? screenColumns : 80)
+        let rows = Double(screenRows > 0 ? screenRows : 25)
+        let factor = up ? 1.1 : 0.9
+        var newW = imageCellW * factor
+        var newH = imageCellH * factor
+        // Clamp: minimum 4x3, maximum full terminal
+        newW = max(4, min(newW, cols))
+        newH = max(3, min(newH, rows))
+        // Re-center after scaling
+        let dw = newW - imageCellW
+        let dh = newH - imageCellH
+        imageCellW = newW
+        imageCellH = newH
+        imageCol = max(1, imageCol - dw / 2)
+        imageRow = max(1, imageRow - dh / 2)
+    }
+
+    /// Clear all TAP+ overlay state.
+    private func clearTapPlusOverlays() {
+        imageActive = false
+        imageData = nil
+        videoStatusObserver?.invalidate()
+        videoStatusObserver = nil
+        videoPlayer?.pause()
+        videoPlayer = nil
+        videoActive = false
+        videoURL = nil
+        visualizerActive = false
+        logoActive = false
+        logoImageData = nil
+        displayBufferVersion += 1  // Force terminal redraw under overlays
     }
 
     // MARK: - URL Detection
@@ -1147,6 +1626,7 @@ class TerminalViewModel: ObservableObject {
             stopLogging()
         }
         SoundtrackManager.shared.stop()
+        clearTapPlusOverlays()
         TransferManager.shared.cleanup()
         cancellables.removeAll()
         glyphCache.removeAllObjects()
@@ -1340,6 +1820,27 @@ class TerminalViewModel: ObservableObject {
                         let pixelIdx = rowStart + termX
                         guard pixelIdx < pixelCount else { continue }
                         pixels[pixelIdx] = (isSet && !hideForeground) ? fgPixel : bgPixel
+                    }
+                }
+            }
+        }
+
+        // Overlay sixel pixels onto the terminal image
+        if hasSixelData, let sixelBuf = sixelPixels, sixelWidth > 0, sixelHeight > 0, fontWidth > 0, fontHeight > 0 {
+            for sy in 0..<sixelHeight {
+                for sx in 0..<sixelWidth {
+                    let sixelIdx = sy * sixelWidth + sx
+                    guard sixelIdx < sixelBuf.count else { continue }
+                    let pixel = sixelBuf[sixelIdx]
+                    if (pixel & 0xFF000000) != 0 {  // non-transparent
+                        let destX = sx * cellWidthPx / fontWidth
+                        let destY = sy * cellHeightPx / fontHeight
+                        if destX < termWidthPx && destY < termHeightPx {
+                            let destIdx = destY * termWidthPx + destX
+                            if destIdx >= 0 && destIdx < pixelCount {
+                                pixels[destIdx] = pixel
+                            }
+                        }
                     }
                 }
             }

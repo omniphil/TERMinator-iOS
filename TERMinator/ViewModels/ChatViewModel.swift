@@ -12,6 +12,8 @@ class ChatViewModel: ObservableObject {
     @Published var isAdmin: Bool = false
     @Published var editingMessageKey: String?
     @Published var toastMessage: String?
+    /// Trigger observed by the view to scroll to the bottom of the chat.
+    @Published var scrollToBottomTrigger = UUID()
 
     // MARK: - Persisted Settings
 
@@ -26,6 +28,8 @@ class ChatViewModel: ObservableObject {
     private var manager: FirebaseChatManager?
     private var cachedBlockedUids: Set<String> = []
     private var lastSendTime: Date = .distantPast
+    private var pendingInitialScroll = false
+    private var scrollDebounceTimer: Timer?
     private var roomMessages: [String: [ChatMessage]] = [
         ChatRoom.bbsChat.rawValue: [],
         ChatRoom.featuresBugs.rawValue: [],
@@ -54,6 +58,7 @@ class ChatViewModel: ObservableObject {
         guard manager == nil else { return }
 
         serverStatus = .connecting
+        pendingInitialScroll = true
         let mgr = FirebaseChatManager()
         self.manager = mgr
 
@@ -93,6 +98,8 @@ class ChatViewModel: ObservableObject {
 
     /// Tear down Firebase completely. Call from onDisappear.
     func disconnect() {
+        scrollDebounceTimer?.invalidate()
+        scrollDebounceTimer = nil
         saveMessageCache()
         manager?.teardown()
         manager = nil
@@ -107,6 +114,7 @@ class ChatViewModel: ObservableObject {
         manager?.detachRoomListener(room: currentRoom.rawValue)
         currentRoom = room
         currentRoomKey = room.rawValue
+        pendingInitialScroll = true
         applyFilter()
         manager?.attachRoomListener(room: room.rawValue)
     }
@@ -121,6 +129,21 @@ class ChatViewModel: ObservableObject {
         }
         if room == currentRoom.rawValue {
             applyFilter()
+
+            // During initial load, messages arrive rapidly from Firebase.
+            // Debounce the scroll — it fires once 150ms after the last message.
+            if pendingInitialScroll {
+                scrollDebounceTimer?.invalidate()
+                scrollDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [weak self] _ in
+                    DispatchQueue.main.async {
+                        self?.scrollToBottomTrigger = UUID()
+                        self?.pendingInitialScroll = false
+                    }
+                }
+            } else {
+                // Normal new message — scroll immediately
+                scrollToBottomTrigger = UUID()
+            }
         }
     }
 

@@ -18,6 +18,12 @@ class ModPlayer {
     private var looping = false
     private var volume: Float = 1.0
 
+    /// PCM listener callback — called from the audio thread with stereo Int16 PCM data.
+    var pcmListener: (([Int16], Int) -> Void)?
+
+    /// Called on main queue when non-looping playback finishes naturally.
+    var onCompletion: (() -> Void)?
+
     /// Load a tracker module file.
     func load(_ filePath: String) -> Bool {
         let success = NativeBridge.shared.modLoad(filePath)
@@ -76,6 +82,11 @@ class ModPlayer {
             var pcmBuffer = [Int16](repeating: 0, count: frames * 2)
             let rendered = NativeBridge.shared.modGetPcm(&pcmBuffer, frames: frames)
 
+            // Feed PCM data to listener (audio analyzer) before checking for end
+            if rendered > 0 {
+                self.pcmListener?(pcmBuffer, rendered)
+            }
+
             if rendered <= 0 {
                 if loopingCapture {
                     // Fill silence this round; looping handled by libxmp loop param
@@ -92,6 +103,7 @@ class ModPlayer {
                 }
                 DispatchQueue.main.async {
                     self.playing = false
+                    self.onCompletion?()
                 }
                 return noErr
             }

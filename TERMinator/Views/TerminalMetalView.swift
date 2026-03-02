@@ -16,6 +16,7 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
     private var currentHeight = 400  // screenRows * fontHeight
 
     private var didNotifyReady = false
+    private var didLogDebug = false
 
     // Persistent pixel buffer (reused across frames to avoid per-frame allocation)
     private var pixelBuffer: [UInt32] = []
@@ -196,6 +197,35 @@ final class TerminalMetalView: MTKView, MTKViewDelegate {
                 renderTerminalToTexture(viewModel: viewModel, texture: texture)
             }
             lastRenderedVersion = currentVersion
+        }
+
+        // One-time debug: log dimensions to file
+        if !didLogDebug && viewModel.screenColumns > 0 {
+            didLogDebug = true
+            let dw = drawable.texture.width
+            let dh = drawable.texture.height
+            let vw = bounds.size.width
+            let vh = bounds.size.height
+            let cs = contentScaleFactor
+            let textureW = Float(currentWidth)
+            let textureH = Float(currentHeight)
+            let drawableW = Float(dw)
+            let drawableH = Float(dh)
+            let scale = min(drawableW / textureW, drawableH / textureH)
+            let scaledW = textureW * scale
+            let scaledH = textureH * scale
+            let sizeX = scaledW / drawableW
+            let sizeY = scaledH / drawableH
+            let msg = """
+            [MetalDebug] drawable=\(dw)x\(dh) viewBounds=\(vw)x\(vh) contentScale=\(cs)
+            texture=\(currentWidth)x\(currentHeight) font=\(viewModel.fontWidth)x\(viewModel.fontHeight)
+            cols=\(viewModel.screenColumns) rows=\(viewModel.screenRows)
+            aspectScale=\(scale) scaledSize=\(scaledW)x\(scaledH)
+            quadSizeX=\(sizeX) quadSizeY=\(sizeY)
+            """
+            if let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                try? msg.write(to: docs.appendingPathComponent("metal_debug.log"), atomically: true, encoding: .utf8)
+            }
         }
 
         // Always draw texture to screen (cheap quad draw)

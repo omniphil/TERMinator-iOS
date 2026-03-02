@@ -348,6 +348,10 @@ struct SettingsView: View {
 
             // Changelog
             DisclosureGroup("Changelog") {
+                changelogEntry("1.1.9",
+                    "Added TAP+ support (Multimedia)",
+                    "Chat scroll fix",
+                    "Arrows now repeat when held")
                 changelogEntry("1.1.8",
                     "Chat system (No accounts needed)",
                     "Phonebook display fix for iPhones")

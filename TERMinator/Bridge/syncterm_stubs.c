@@ -196,6 +196,9 @@ static int ansi_response_len = 0;
 static int saved_cursor_x = 1;
 static int saved_cursor_y = 1;
 
+// Last printed character for ESC[b (REP - repeat previous character)
+unsigned char cterm_last_printed_char = 0;
+
 // ANSI color to CGA palette index mapping
 // ANSI: 0=Black, 1=Red, 2=Green, 3=Yellow, 4=Blue, 5=Magenta, 6=Cyan, 7=White
 // CGA:  0=Black, 1=Blue, 2=Green, 3=Cyan, 4=Red, 5=Magenta, 6=Brown, 7=LightGray
@@ -223,6 +226,7 @@ void cterm_reset_ansi_state(void) {
     saved_cursor_x = 1;
     saved_cursor_y = 1;
     osc_buffer_len = 0;
+    cterm_last_printed_char = 0;
 }
 
 static void process_ansi_sequence(void) {
@@ -455,6 +459,148 @@ static void process_ansi_sequence(void) {
             // Respond as VT102 - this tells the BBS we're an ANSI terminal
             ansi_response_len = snprintf(ansi_response, sizeof(ansi_response), "\033[?6c");
             break;
+        case 'G': case '`':  // CHA/HPA - Cursor Horizontal Absolute
+            {
+                int col = params[0] > 0 ? params[0] : 1;
+                ciolib_gotoxy(col, ciolib_wherey());
+            }
+            break;
+        case 'd':  // VPA - Cursor Vertical Absolute (line position)
+            {
+                int row = params[0] > 0 ? params[0] : 1;
+                ciolib_gotoxy(ciolib_wherex(), row);
+            }
+            break;
+        case 'E':  // CNL - Cursor Next Line (move down N lines, to column 1)
+            {
+                struct text_info eti;
+                ciolib_gettextinfo(&eti);
+                int n = params[0] > 0 ? params[0] : 1;
+                int y = ciolib_wherey() + n;
+                if (y > eti.screenheight) y = eti.screenheight;
+                ciolib_gotoxy(1, y);
+            }
+            break;
+        case 'F':  // CPL - Cursor Previous Line (move up N lines, to column 1)
+            {
+                int n = params[0] > 0 ? params[0] : 1;
+                int y = ciolib_wherey() - n;
+                if (y < 1) y = 1;
+                ciolib_gotoxy(1, y);
+            }
+            break;
+        case 'L':  // IL - Insert Line(s)
+            {
+                int n = params[0] > 0 ? params[0] : 1;
+                for (int j = 0; j < n; j++) {
+                    ciolib_insline();
+                }
+            }
+            break;
+        case 'M':  // DL - Delete Line(s)
+            {
+                int n = params[0] > 0 ? params[0] : 1;
+                for (int j = 0; j < n; j++) {
+                    ciolib_delline();
+                }
+            }
+            break;
+        case '@':  // ICH - Insert Character(s) (shift line right, insert blanks)
+            {
+                int n = params[0] > 0 ? params[0] : 1;
+                struct text_info ati;
+                ciolib_gettextinfo(&ati);
+                int cx = ciolib_wherex();
+                int cy = ciolib_wherey();
+                int w = ati.screenwidth;
+                if (cx <= w) {
+                    int line_len = w - cx + 1;
+                    if (n < line_len) {
+                        ciolib_movetext(cx, cy, w - n, cy, cx + n, cy);
+                    }
+                    // Fill inserted area with spaces
+                    ciolib_gotoxy(cx, cy);
+                    for (int j = 0; j < n && cx + j <= w; j++) {
+                        ciolib_putch(' ');
+                    }
+                    ciolib_gotoxy(cx, cy);
+                }
+            }
+            break;
+        case 'P':  // DCH - Delete Character(s) (shift line left, blank at end)
+            {
+                int n = params[0] > 0 ? params[0] : 1;
+                struct text_info pti;
+                ciolib_gettextinfo(&pti);
+                int cx = ciolib_wherex();
+                int cy = ciolib_wherey();
+                int w = pti.screenwidth;
+                if (cx <= w) {
+                    int chars_remaining = w - cx + 1;
+                    if (n < chars_remaining) {
+                        // Shift chars left
+                        ciolib_movetext(cx + n, cy, w, cy, cx, cy);
+                    }
+                    // Fill end of line with spaces
+                    int blank_start = w - n + 1;
+                    if (blank_start < cx) blank_start = cx;
+                    int save_x = ciolib_wherex();
+                    int save_y = ciolib_wherey();
+                    ciolib_gotoxy(blank_start, cy);
+                    for (int j = blank_start; j <= w; j++) {
+                        ciolib_putch(' ');
+                    }
+                    ciolib_gotoxy(save_x, save_y);
+                }
+            }
+            break;
+        case 'X':  // ECH - Erase Character(s) (overwrite with spaces, don't move cursor)
+            {
+                int n = params[0] > 0 ? params[0] : 1;
+                struct text_info xti;
+                ciolib_gettextinfo(&xti);
+                int cx = ciolib_wherex();
+                int cy = ciolib_wherey();
+                for (int j = 0; j < n && cx + j <= xti.screenwidth; j++) {
+                    ciolib_gotoxy(cx + j, cy);
+                    ciolib_putch(' ');
+                }
+                ciolib_gotoxy(cx, cy);
+            }
+            break;
+        case 'S':  // SU - Scroll Up
+            {
+                int n = params[0] > 0 ? params[0] : 1;
+                for (int j = 0; j < n; j++) {
+                    ciolib_wscroll();
+                }
+            }
+            break;
+        case 'T':  // SD - Scroll Down (reverse scroll)
+            {
+                struct text_info tti;
+                ciolib_gettextinfo(&tti);
+                int n = params[0] > 0 ? params[0] : 1;
+                // Save cursor, go to top, insert lines, restore cursor
+                int save_x = ciolib_wherex();
+                int save_y = ciolib_wherey();
+                ciolib_gotoxy(1, 1);
+                for (int j = 0; j < n; j++) {
+                    ciolib_insline();
+                }
+                ciolib_gotoxy(save_x, save_y);
+            }
+            break;
+        case 'b':  // REP - Repeat previous graphic character
+            {
+                int n = params[0] > 0 ? params[0] : 1;
+                if (cterm_last_printed_char != 0) {
+                    for (int j = 0; j < n; j++) {
+                        ciolib_putch(cterm_last_printed_char);
+                    }
+                }
+            }
+            break;
         default:
             break;
     }
@@ -500,10 +646,13 @@ size_t cterm_write(struct cterminal *cterm, const void *buf, int buflen,
                     ciolib_gotoxy(next_tab, ciolib_wherey());
                 } else if (c == 7) {
                     // Bell - handled elsewhere
+                } else if (c == 0) {
+                    // NUL - ignore (telnet sends CR+NUL for bare carriage return)
                 } else {
-                    // All printable characters including CP437 graphics (0x00-0x1F)
+                    // All printable characters including CP437 graphics (0x01-0x1F)
                     // In CP437, characters 1-31 have graphical glyphs
                     ciolib_putch(c);
+                    cterm_last_printed_char = c;
                 }
                 break;
 

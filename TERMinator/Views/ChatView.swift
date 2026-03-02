@@ -182,14 +182,7 @@ struct ChatView: View {
                     .frame(minHeight: geo.size.height, alignment: .bottom)
                 }
             }
-            .onChange(of: viewModel.messages.count) { _ in
-                if let lastKey = viewModel.messages.last?.key {
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        proxy.scrollTo(lastKey, anchor: .bottom)
-                    }
-                }
-            }
-            .onAppear {
+            .onChange(of: viewModel.scrollToBottomTrigger) { _ in
                 if let lastKey = viewModel.messages.last?.key {
                     proxy.scrollTo(lastKey, anchor: .bottom)
                 }
@@ -209,16 +202,24 @@ struct ChatView: View {
             Spacer().frame(height: 60)
             Text(emptyStateText)
                 .font(.system(size: CGFloat(viewModel.textSize), design: .monospaced))
-                .foregroundColor(.termLightGreen.opacity(0.6))
+                .foregroundColor(emptyStateColor)
         }
         .frame(maxWidth: .infinity)
     }
 
     private var emptyStateText: String {
         switch viewModel.serverStatus {
-        case .connecting: return "Connecting..."
-        case .connected: return "No messages yet"
+        case .connecting: return "Loading messages…"
+        case .connected: return "No messages yet — say something!"
         case .disconnected: return "Disconnected"
+        }
+    }
+
+    private var emptyStateColor: Color {
+        switch viewModel.serverStatus {
+        case .connecting: return .termYellow
+        case .connected: return .gray
+        case .disconnected: return .termLightGreen.opacity(0.6)
         }
     }
 
