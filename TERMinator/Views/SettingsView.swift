@@ -393,37 +393,7 @@ struct SettingsView: View {
                 Text("Credits")
                     .font(.headline)
 
-                Text("Based on SyncTERM 1.8b")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text("Copyright 2007 Stephen Hurd")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text("Licensed under GNU GPL v2")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                Divider()
-
-                Text("SSH support via cryptlib (Synchronet)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text("Copyright 1992-2023 Peter Gutmann")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text("Dual licensed: Sleepycat/GPL-compatible")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                Divider()
-
-                Text("Tracker playback via libxmp 4.6.0")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text("Copyright 1996-2024 Claudio Matsuoka & Hipolito Carraro Jr")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text("Licensed under MIT")
+                Text("Based on SyncTERM, we would not exist without the legendary work of SyncTERM, so hats off to the SyncTERM folks!")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
@@ -450,23 +420,24 @@ struct SettingsView: View {
                 Text("Special thx to aNACHRONiST (aNSt) for the artwork and testing!")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                Text("He may be reached at: aNSt@absinthebbs.net for collaborations and commissions.")
+                Text("He may be reached at: aNSt@absinthebbs.net for collaborations and commissions")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
                 Divider()
 
-                Text("Source Code")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
-                Text("This application is open source and licensed under the GNU General Public License v2.")
+                Text("This application is open source and licensed under the GNU GPL v2.")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                Link("GitHub: TERMinator-iOS", destination: URL(string: "https://github.com/omniphil/TERMinator-iOS")!)
+                Link("GitHub: github.com/omniphil/TERMinator-iOS", destination: URL(string: "https://github.com/omniphil/TERMinator-iOS")!)
                     .font(.caption)
             }
             .padding(.vertical, 4)
+
+            // Open Source Licenses (separate screen)
+            NavigationLink("Open Source Licenses") {
+                OpenSourceLicensesView()
+            }
         } header: {
             Text("About")
         } footer: {
@@ -747,6 +718,71 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Open Source Licenses
+
+struct OpenSourceLicensesView: View {
+    var body: some View {
+        List {
+            Section {
+                Text("TERMinator includes the following open source software:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            licenseEntry(
+                name: "SyncTERM 1.8b",
+                copyright: "Copyright 2007 Stephen Hurd",
+                license: "GNU GPL v2",
+                url: "https://syncterm.net",
+                urlLabel: "syncterm.net"
+            )
+
+            licenseEntry(
+                name: "cryptlib",
+                copyright: "Copyright 1992-2023 Peter Gutmann",
+                license: "Sleepycat License",
+                url: "https://www.cryptlib.com",
+                urlLabel: "cryptlib.com"
+            )
+
+            licenseEntry(
+                name: "libxmp 4.6.0",
+                copyright: "Copyright 1996-2024 Claudio Matsuoka & Hipolito Carraro Jr",
+                license: "MIT",
+                url: "https://github.com/libxmp/libxmp",
+                urlLabel: "github.com/libxmp/libxmp"
+            )
+
+            licenseEntry(
+                name: "Firebase iOS SDK",
+                copyright: "Copyright Google LLC",
+                license: "Apache 2.0",
+                url: "https://github.com/firebase/firebase-ios-sdk",
+                urlLabel: "github.com/firebase/firebase-ios-sdk"
+            )
+        }
+        .navigationTitle("Open Source Licenses")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func licenseEntry(name: String, copyright: String, license: String, url: String, urlLabel: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(name)
+                .font(.body)
+                .fontWeight(.semibold)
+            Text(copyright)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Text("License: \(license)")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Link(urlLabel, destination: URL(string: url)!)
+                .font(.caption)
+        }
+        .padding(.vertical, 4)
+    }
 }
 
 // MARK: - Preview
